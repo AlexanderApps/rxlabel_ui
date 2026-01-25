@@ -1,5 +1,9 @@
 <template>
-  <div class="h-full w-full dark:bg-gray-900 dark:text-white">
+  <div
+    class="h-full w-full dark:bg-gray-900 dark:text-white"
+    :class="{ 'pointer-events-none': showModal }"
+  >
+    <AddLabelModal :show="showModal" @close="showModal = false" @save="handleSave" />
     <div class="grid grid-rows-[3.5rem_3rem_1fr] h-full">
       <Header
         title="Medication Label"
@@ -64,52 +68,73 @@
           <button class="btn-queue" @click="goToQueue">View Queue</button>
         </template>
       </Header>
+
+      <!-- Search and Client -->
       <div
-        class="flex h-12 w-full shadow-xs items-center px-5 mb-4 gap-x-4 border-b border-gray-300/60 dark:border-gray-800/60 dark:bg-gray-900 dark:text-white"
+        class="flex h-12 w-full shadow-xs items-center justify-between px-5 mb-4 gap-x-4 border-b border-gray-300/60 dark:border-gray-800/60 dark:bg-gray-900 dark:text-white"
       >
-        <div class="flex items-center">
-          <label for="search" class="sr-only">Search</label>
-          <div class="relative w-full z-50">
-            <div class="absolute inset-y-0 start-0 flex items-center ps-2 pointer-events-none">
-              <svg
-                class="w-4 h-4 text-gray-600/60 dark:text-gray-500"
-                aria-hidden="true"
-                xmlns="http://www.w3.org/2000/svg"
-                width="24"
-                height="24"
-                fill="none"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  stroke="currentColor"
-                  stroke-linecap="round"
-                  stroke-width="2"
-                  d="m21 21-3.5-3.5M17 10a7 7 0 1 1-14 0 7 7 0 0 1 14 0Z"
-                />
-              </svg>
+        <div class="flex items-center gap-x-4">
+          <div class="flex items-center">
+            <label for="search" class="sr-only">Search</label>
+            <div class="relative w-full">
+              <div class="absolute inset-y-0 start-0 flex items-center ps-2 pointer-events-none">
+                <svg
+                  class="w-4 h-4 text-gray-600/60 dark:text-gray-500"
+                  aria-hidden="true"
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="24"
+                  height="24"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    stroke="currentColor"
+                    stroke-linecap="round"
+                    stroke-width="2"
+                    d="m21 21-3.5-3.5M17 10a7 7 0 1 1-14 0 7 7 0 0 1 14 0Z"
+                  />
+                </svg>
+              </div>
+              <input
+                id="search"
+                v-model="search"
+                type="text"
+                class="h-7 px-3 py-1.5 bg-gray-300/50 dark:bg-gray-800 border border-gray-300/50 dark:border-gray-700/60 rounded-md ps-8 text-sm focus:outline focus:outline-gray-500/50 block w-full placeholder:text-body"
+                placeholder="Search label..."
+              />
             </div>
-            <input
-              id="search"
-              v-model="search"
-              type="text"
-              class="h-7 px-3 py-1.5 bg-gray-300/50 dark:bg-gray-800 border border-gray-300/50 dark:border-gray-700/60 rounded-md ps-8 text-sm focus:outline focus:outline-gray-500/50 block w-full placeholder:text-body"
-              placeholder="Search label..."
-            />
+          </div>
+          <div class="flex items-center">
+            <label for="client" class="sr-only">Client Name</label>
+            <div class="relative w-full">
+              <input
+                id="client"
+                v-model="client"
+                type="text"
+                class="h-7 px-3 py-1.5 border rounded-md ps-3 bg-gray-300/50 dark:bg-gray-800 border-gray-300/50 dark:border-gray-700/60 text-sm focus:outline focus:outline-gray-500/50 block w-full placeholder:text-body"
+                placeholder="Client Name"
+              />
+            </div>
           </div>
         </div>
-        <div class="flex items-center">
-          <label for="client" class="sr-only">Client Name</label>
-          <div class="relative w-full">
-            <input
-              id="client"
-              v-model="client"
-              type="text"
-              class="h-7 px-3 py-1.5 border rounded-md ps-3 bg-gray-300/50 dark:bg-gray-800 border-gray-300/50 dark:border-gray-700/60 text-sm focus:outline focus:outline-gray-500/50 block w-full placeholder:text-body"
-              placeholder="Client Name"
+        <button
+          class="flex items-center gap-1.5 h-7 px-3 py-1.5 bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 rounded-lg transition-colors text-sm whitespace-nowrap"
+          @click="addNewLabel"
+        >
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            class="w-3.5 h-3.5"
+            fill="currentColor"
+            viewBox="0 0 16 16"
+          >
+            <path
+              d="M8 4a.5.5 0 0 1 .5.5v3h3a.5.5 0 0 1 0 1h-3v3a.5.5 0 0 1-1 0v-3h-3a.5.5 0 0 1 0-1h3v-3A.5.5 0 0 1 8 4"
             />
-          </div>
-        </div>
+          </svg>
+          Add Label
+        </button>
       </div>
+
       <div
         class="label-container w-full h-[calc(100vh-6.5rem)] overflow-auto grid grid-cols-[repeat(auto-fill,350px)] gap-7.5 p-5 justify-center dark:bg-gray-900 dark:text-white"
       >
@@ -117,8 +142,9 @@
           v-for="label in labels"
           :key="label.id"
           v-model="labelModels[label.id]"
-          :current-date="curDate"
+          :current-date="formattedDate"
           :client-name="client"
+          :current-user="currentUser"
           @remove="() => removeLabelConfirmed(label.id)"
           @update="() => saveLabel(label.id)"
           @queue="() => addToQueue(label.id)"
@@ -142,14 +168,16 @@
 </template>
 
 <script setup>
-import { ref, onMounted, watch, reactive } from 'vue'
+import { ref, onMounted, watch, reactive, computed } from 'vue'
 import { useRouter } from 'vue-router'
-import LabelCardV2 from '../components/LabelCardV2.vue'
-import ConfirmModal from '../components/ConfirmModal.vue'
-import SettingsModal from './SettingsModal.vue'
 import { useAlerts } from '../composables/useAlerts.js'
+import { getFormattedDateTime, soothingPrinterSound } from '../utils/utils.js'
+import SettingsModal from './SettingsModal.vue'
+import ConfirmModal from '../components/ConfirmModal.vue'
+import LabelCardV2 from '../components/LabelCardV2.vue'
 import MoreMenu from '../components/MoreMenu.vue'
 import Header from '../components/Header.vue'
+import AddLabelModal from './AddLabelModal.vue'
 
 const router = useRouter()
 const alerts = useAlerts()
@@ -160,7 +188,7 @@ const labelModels = reactive({})
 const search = ref('')
 const client = ref('')
 const queueCount = ref(0)
-const curDate = ref(new Date().toLocaleDateString())
+const currentUser = ref('')
 
 const showSettings = ref(false)
 const isRefreshing = ref(false)
@@ -173,7 +201,8 @@ const settings = reactive({
   facility_phone: '',
   queue_size: 0,
   theme: 'system',
-  date_format: ''
+  date_format: '',
+  alert_sound: ''
 })
 
 // modal confirm helper
@@ -182,6 +211,23 @@ const modalState = reactive({
   message: '',
   resolve: null
 })
+
+const formattedDate = computed(() => {
+  return getFormattedDateTime(settings.date_format || 'dt5')
+})
+const showModal = ref(false)
+
+const handleSave = async (labels_list) => {
+  // Save new unsaved labels
+  const createPromises = labels_list.map(async (l) => {
+    await window.api.createLabel(l.product, l.instructions, l.warning)
+  })
+
+  await Promise.all(createPromises)
+  showModal.value = false
+  refresh()
+  alerts.success('Successfully added item(s) to labels')
+}
 
 // ----- Helpers -----
 const confirm = (message) => {
@@ -225,7 +271,7 @@ const loadLabels = async () => {
   for (const k in labelModels) delete labelModels[k]
 
   // hydrate models
-  data.forEach((l) => (labelModels[l.id] = { ...l }))
+  data.forEach((l) => (labelModels[l.id] = { ...l, client: client.value, _dirty: false }))
 }
 
 // ----- Actions -----
@@ -266,46 +312,12 @@ const addToQueue = async (id) => {
   alerts.success('Item added to queue')
 }
 
-function soothingPrinterSound() {
-  const context = new (window.AudioContext || window.webkitAudioContext)()
-
-  // 1. Create a GainNode to control the "envelope" (fade-in/fade-out)
-  const gainNode = context.createGain()
-  gainNode.connect(context.destination)
-
-  // 2. Setup frequencies (using a "Perfect Fifth" interval for a musical chime)
-  const frequencies = [880, 1320] // A5 and E6 (higher is clearer/less intrusive)
-
-  const startTime = context.currentTime
-  const duration = 0.5 // Total length of the sound
-
-  frequencies.forEach((freq) => {
-    const osc = context.createOscillator()
-    osc.type = 'sine' // Purest, smoothest wave
-    osc.frequency.setValueAtTime(freq, startTime)
-    osc.connect(gainNode)
-    osc.start(startTime)
-    osc.stop(startTime + duration)
-  })
-
-  // 3. Define the "Soothing" Envelope
-  // Start silent
-  gainNode.gain.setValueAtTime(0, startTime)
-  // Attack: Quick fade in to 0.1 volume (10ms) to avoid a "pop"
-  gainNode.gain.linearRampToValueAtTime(0.1, startTime + 0.02)
-  // Decay/Release: Smoothly fade to silence over the rest of the duration
-  gainNode.gain.exponentialRampToValueAtTime(0.001, startTime + duration)
-}
-
 const printLabel = async (id) => {
-  // manualBeep()
-  soothingPrinterSound()
-  await window.api.printerPrint({
-    ...labelModels[id],
-    ...settings,
-    user: 'Ann',
-    client_name: 'Jim Doe'
-  })
+  if (settings.alert_sound) {
+    soothingPrinterSound()
+  }
+  await window.api.printerPrint({ ...labelModels[id] })
+
   alerts.error('Print functionality not implemented.')
 }
 
@@ -323,6 +335,19 @@ const goToSettings = () => {
   }, 200)
 }
 
+const handleSaveSettings = async () => {
+  await fetchSettings()
+}
+
+const handeLogout = async () => {
+  await window.api.logoutUser()
+  router.replace({ name: 'LoginPage' })
+}
+
+const addNewLabel = () => {
+  showModal.value = true
+}
+
 const moreActions = [
   {
     label: 'Clients',
@@ -330,12 +355,14 @@ const moreActions = [
   },
   {
     label: 'Logout',
-    handler: () => console.log('first')
+    handler: async () => await handeLogout()
   }
 ]
 
 // ----- Lifecycle -----
 onMounted(async () => {
+  const user = await window.api.getMe()
+  currentUser.value = user?.name || ''
   await fetchSettings()
   await refresh()
 })

@@ -20,7 +20,9 @@ const api = {
   countQueue: () => ipcRenderer.invoke('queue:count'),
   clearQueue: () => ipcRenderer.invoke('queue:clear'),
   printerPrint: (job) => ipcRenderer.invoke('printer:print', job),
+  clientLabelsPrint: (id) => ipcRenderer.invoke('client-label:print', id),
 
+  getMe: () => ipcRenderer.invoke('users:me'),
   createUser: (username, email, password) =>
     ipcRenderer.invoke('users:add', username, email, password),
   deleteUser: (id) => ipcRenderer.invoke('users:add', id),
@@ -30,14 +32,21 @@ const api = {
 
   getClients: () => ipcRenderer.invoke('clients:get'),
   getClientById: (id) => ipcRenderer.invoke('client:get', id),
+  updateClient: (id, name, contact, email) =>
+    ipcRenderer.invoke('client:update', id, name, contact, email),
   createClient: (username, contact, email) =>
     ipcRenderer.invoke('clients:add', username, contact, email),
   getClientLabels: (id) => ipcRenderer.invoke('clients:get-labels', id),
   deleteClient: (id) => ipcRenderer.invoke('clients:delete', id),
   createClientLabel: (client_id, product, instructions, warning) =>
     ipcRenderer.invoke('clients:add-label', client_id, product, instructions, warning),
+  updateClientLabel: (id, product, instructions, warning) =>
+    ipcRenderer.invoke('client-label:update', id, product, instructions, warning),
   deleteClientLabels: (id, labels) => ipcRenderer.invoke('clients:delete-labels', id, labels),
-  countClients: () => ipcRenderer.invoke('clients:count')
+  deleteClientLabel: (id) => ipcRenderer.invoke('clients:delete-label', id),
+  countClients: () => ipcRenderer.invoke('clients:count'),
+  countClientLabels: (id) => ipcRenderer.invoke('client-label:count', id),
+  sendToQueue: (id) => ipcRenderer.invoke('client-label:queue', id)
 }
 
 // Use `contextBridge` APIs to expose Electron APIs

@@ -319,13 +319,8 @@ function soothingPrinterSound() {
 const printLabel = async (id) => {
   // manualBeep()
   soothingPrinterSound()
-  await window.api.printerPrint({
-    ...labelModels[id],
-    ...settings,
-    user: 'Ann',
-    client_name: 'Jim Doe'
-  })
-  alerts.error('Print functionality not implemented.')
+  await window.api.printerPrint({ ...labelModels[id] })
+  alerts.success('Print completed.')
 }
 
 const goToQueue = () => {
@@ -342,13 +337,13 @@ const goToSettings = () => {
   }, 200)
 }
 
-const goToLoginPage = () => {
-  router.push({ name: 'LoginPage' })
-}
+// const goToLoginPage = () => {
+//   router.push({ name: 'LoginPage' })
+// }
 
-const goToClientsPage = () => {
-  router.push({ name: 'Clients' })
-}
+// const goToClientsPage = () => {
+//   router.push({ name: 'Clients' })
+// }
 
 const moreActions = [
   {

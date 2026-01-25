@@ -4,10 +4,12 @@ import { electronApp, optimizer, is } from '@electron-toolkit/utils'
 import icon from '../../resources/rxlabel_icon.png?asset'
 import { db } from './db'
 import { verifyMasterPassword, hashMasterPassword } from './auth'
-import { printerStart, printerSend, printerShutdown } from './printer'
+import { printerStart, enqueuePrint, printerShutdown } from './printer'
 import { themeText } from './printer_themes'
+import { cleanPrinterData } from './utils'
 
 let CURRENT_USER = null
+let SETTINGS = null
 
 ipcMain.handle('settings:theme', (event, theme) => {
   nativeTheme.themeSource = theme // 'light', 'dark', or 'system'
@@ -35,7 +37,25 @@ ipcMain.handle('queue:clear', () => db.clearQueueItems())
 
 // Printing
 ipcMain.handle('printer:print', async (_, job) => {
-  await printerSend('PRINT', themeText(job))
+  const cleaned = cleanPrinterData(job, SETTINGS, CURRENT_USER)
+
+  if (Array.isArray(cleaned)) {
+    await enqueuePrint(cleaned.map(themeText))
+  } else {
+    await enqueuePrint(themeText(cleaned))
+  }
+})
+
+ipcMain.handle('client-label:print', async (_, id) => {
+  const job = await db.getClientLabelsWithClientName(id)
+  const cleaned = cleanPrinterData(job, SETTINGS, CURRENT_USER)
+  console.log(cleaned)
+
+  if (Array.isArray(cleaned)) {
+    await enqueuePrint(cleaned.map(themeText))
+  } else {
+    await enqueuePrint(themeText(cleaned))
+  }
 })
 
 // Helper to get session status
@@ -87,19 +107,27 @@ ipcMain.handle('user:login', async (_, username, password) => {
     return { success: false, error: error.message }
   }
 })
-
 ipcMain.handle('users:add', async (_, username, email, password) => {
   db.createUser(username, email, await hashMasterPassword(password))
 })
+ipcMain.handle('users:me', () => CURRENT_USER)
 
 ipcMain.handle('clients:get', () => db.fetchClients())
 ipcMain.handle('client:get', (_, id) => db.getClientById(id))
 ipcMain.handle('clients:add', (_, n, c, e) => db.createClient(n, c, e))
+ipcMain.handle('client:update', (_, i, n, c, e) => {
+  console.log(n, c, e, i)
+  db.updateClient(i, n, c, e)
+})
 ipcMain.handle('clients:delete', (_, id) => db.deleteClientById(id))
 ipcMain.handle('clients:get-labels', (_, id) => db.fetchClientLabels(id))
 ipcMain.handle('clients:delete-labels', (_, id, labels) => db.deleteClientLabels(id, labels))
+ipcMain.handle('clients:delete-label', (_, id) => db.deleteClientLabel(id))
 ipcMain.handle('clients:add-label', (_, id, p, i, w) => db.createClientLabel(id, p, i, w))
 ipcMain.handle('clients:count', () => db.countClients())
+ipcMain.handle('client-label:count', (_, id) => db.countClientLabels(id))
+ipcMain.handle('client-label:queue', (_, id) => db.copyClientLabelToQueue(id))
+ipcMain.handle('client-label:update', (_, id, p, i, w) => db.updateClientLabel(id, p, i, w))
 
 function createWindow() {
   // Create the browser window.
@@ -139,9 +167,10 @@ function createWindow() {
 // initialization and is ready to create browser windows.
 // Some APIs can only be used after this event occurs.
 app.whenReady().then(async () => {
-  console.log(db.fetchSettings())
+  SETTINGS = db.fetchSettings()
 
   printerStart()
+  // console.log(db.getClientLabelsWithClientName(3))
 
   // Set app user model id for windows
   electronApp.setAppUserModelId('com.electron')

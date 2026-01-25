@@ -31,18 +31,34 @@ const routes = [
   {
     path: '/clients',
     name: 'Clients',
-    component: ClientListView
+    component: ClientListView,
+    meta: { requiresAuth: true }
   },
   {
     path: '/clients/:id',
     name: 'Client',
-    component: ClientPage
+    component: ClientPage,
+    meta: { requiresAuth: true }
   }
 ]
 
 const router = createRouter({
   history: createWebHashHistory(), // IMPORTANT for Electron
   routes
+})
+
+router.beforeEach(async (to, from, next) => {
+  const requiresAuth = to.matched.some((record) => record.meta.requiresAuth)
+
+  const me = await window.api.getMe()
+
+  const isAuthenticated = me !== null && me !== undefined
+
+  if (requiresAuth && !isAuthenticated) {
+    return next('/login')
+  }
+
+  next()
 })
 
 export default router

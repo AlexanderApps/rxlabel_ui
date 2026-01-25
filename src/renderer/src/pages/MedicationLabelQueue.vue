@@ -92,7 +92,7 @@
           :key="label.id"
           v-model="labelModels[label.id]"
           :current-date="curDate"
-          :client-name="client"
+          :current-user="currentUser"
           @remove="() => removeFromQueue(label.id)"
           @update="() => saveLabel(label.id)"
           @print="() => printLabel(label.id)"
@@ -117,16 +117,17 @@ import ConfirmModal from '../components/ConfirmModal.vue'
 import { useAlerts } from '../composables/useAlerts.js'
 import Header from '../components/Header.vue'
 import MoreMenu from '../components/MoreMenu.vue'
+import { soothingPrinterSound } from '../utils/utils.js'
 
 const router = useRouter()
 const labels = ref([])
 const labelModels = reactive({})
-const client = ref('')
 const settings = ref({ facility_name: '', facility_address: '', dateFormat: 'd1' })
 const queueCount = ref(0)
 const curDate = ref(new Date().toUTCString())
 const alerts = useAlerts()
 const isRefreshing = ref(false)
+const currentUser = ref('')
 
 const confirmState = reactive({
   show: false,
@@ -161,12 +162,13 @@ const confirmClearQueue = async () => {
 
 const printQueue = async () => {
   if (await confirm('Print all labels in the queue?')) {
-    for (const label of labels.value) {
-      console.log({ ...labelModels[label.id], client: client.value })
-    }
-    setTimeout(() => {
-      alerts.success('Print jobs sent for all labels in the queue.')
-    }, 500)
+    soothingPrinterSound()
+
+    const jobList = JSON.parse(JSON.stringify(Object.values(labelModels)))
+
+    await window.api.printerPrint(jobList)
+
+    alerts.success('Print jobs sent for all labels in the queue.')
   }
 }
 
@@ -183,7 +185,7 @@ const loadQueueLabels = async () => {
   Object.keys(labelModels).forEach((k) => delete labelModels[k])
 
   // hydrate editable models
-  data.forEach((l) => (labelModels[l.id] = { ...l }))
+  data.forEach((l) => (labelModels[l.id] = { ...l, _dirty: false }))
 }
 
 const fetchQueueCount = async () => {
@@ -210,45 +212,9 @@ const clearQueue = async () => {
   await fetchQueueCount()
 }
 
-function soothingPrinterSound() {
-  const context = new (window.AudioContext || window.webkitAudioContext)()
-
-  // 1. Create a GainNode to control the "envelope" (fade-in/fade-out)
-  const gainNode = context.createGain()
-  gainNode.connect(context.destination)
-
-  // 2. Setup frequencies (using a "Perfect Fifth" interval for a musical chime)
-  const frequencies = [880, 1320] // A5 and E6 (higher is clearer/less intrusive)
-
-  const startTime = context.currentTime
-  const duration = 0.5 // Total length of the sound
-
-  frequencies.forEach((freq) => {
-    const osc = context.createOscillator()
-    osc.type = 'sine' // Purest, smoothest wave
-    osc.frequency.setValueAtTime(freq, startTime)
-    osc.connect(gainNode)
-    osc.start(startTime)
-    osc.stop(startTime + duration)
-  })
-
-  // 3. Define the "Soothing" Envelope
-  // Start silent
-  gainNode.gain.setValueAtTime(0, startTime)
-  // Attack: Quick fade in to 0.1 volume (10ms) to avoid a "pop"
-  gainNode.gain.linearRampToValueAtTime(0.1, startTime + 0.02)
-  // Decay/Release: Smoothly fade to silence over the rest of the duration
-  gainNode.gain.exponentialRampToValueAtTime(0.001, startTime + duration)
-}
-
 const printLabel = async (id) => {
   soothingPrinterSound()
-  await window.api.printerPrint({
-    ...labelModels[id],
-    ...settings.value,
-    user: 'Ann',
-    client_name: 'Jim Doe'
-  })
+  await window.api.printerPrint({ ...labelModels[id] })
   alerts.error('Print functionality not implemented.')
 }
 
@@ -271,6 +237,10 @@ const refreshLabels = async () => {
 function goToLabel() {
   router.push({ name: 'MedicationLabel' })
 }
+const handeLogout = async () => {
+  await window.api.logoutUser()
+  router.replace({ name: 'LoginPage' })
+}
 
 const moreActions = [
   {
@@ -279,11 +249,13 @@ const moreActions = [
   },
   {
     label: 'Logout',
-    handler: () => console.log('first')
+    handler: async () => await handeLogout()
   }
 ]
 
-onMounted(() => {
+onMounted(async () => {
+  const user = await window.api.getMe()
+  currentUser.value = user?.name || ''
   fetchSettings()
   refresh()
 })

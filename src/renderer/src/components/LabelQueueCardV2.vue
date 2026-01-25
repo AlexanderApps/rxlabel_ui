@@ -29,13 +29,13 @@
           <input
             type="text"
             class="border border-gray-300/60 dark:border-gray-500/60 w-30 h-6 ps-1 focus:outline focus:outline-blue-500/50 block rounded-xs"
-            :value="clientName"
+            :value="label.client"
           />
         </div>
         <div class="flex gap-1">
           <strong>Disp. by:</strong>
           <input
-            v-model="label.dispensedBy"
+            :value="currentUser"
             type="text"
             class="border border-gray-300/60 dark:border-gray-500/60 w-20 h-6 ps-1 focus:outline focus:outline-blue-500/50 block rounded-xs"
           />
@@ -70,16 +70,51 @@
 </template>
 
 <script setup>
+import { watch } from 'vue'
 import Button from './Button.vue'
 
 const label = defineModel({ type: Object, required: true })
-defineProps({
+
+const props = defineProps({
   currentDate: { type: String, required: true },
+  currentUser: { type: String, required: true },
   clientName: { type: String, required: false }
 })
 
 defineEmits(['remove', 'update', 'queue', 'print'])
 
+// Sync clientName → label.client whenever it changes
+watch(
+  () => props.clientName,
+  (newName) => {
+    if (newName !== undefined && newName !== null) {
+      label.value.client = newName
+    }
+  },
+  { immediate: true } // optional: initialize immediately on mount
+)
+
+const trackedKeys = ['product', 'instructions', 'warning', 'client']
+
+watch(
+  () => ({
+    product: label.value.product,
+    instructions: label.value.instructions,
+    warning: label.value.warning,
+    client: label.value.client
+  }),
+  (newVal, oldVal) => {
+    if (!oldVal) return // ignore initial run
+
+    for (const key of trackedKeys) {
+      if (newVal[key] !== oldVal[key]) {
+        label.value._dirty = true
+        break
+      }
+    }
+  },
+  { deep: true }
+)
 // Configure action buttons declaratively
 const actions = [
   { label: 'Remove', event: 'remove', color: 'red' },

@@ -70,7 +70,7 @@
       <div
         class="label-container w-full h-[calc(100vh-3.5rem)] overflow-auto p-5 justify-center dark:bg-gray-900 dark:text-white items-center"
       >
-        <ClientTable ref="clientsRef" clients="clients" />
+        <ClientTable ref="clientsRef" />
       </div>
     </div>
   </div>
@@ -194,6 +194,11 @@ function goToQueue() {
   router.push({ name: 'MedicationLabelQueue' })
 }
 
+const handeLogout = async () => {
+  await window.api.logoutUser()
+  router.replace({ name: 'LoginPage' })
+}
+
 const moreActions = [
   {
     label: 'Clients',
@@ -201,7 +206,7 @@ const moreActions = [
   },
   {
     label: 'Logout',
-    handler: (id) => router.push({ name: 'Client', params: { id } })
+    handler: async () => await handeLogout()
   }
 ]
 

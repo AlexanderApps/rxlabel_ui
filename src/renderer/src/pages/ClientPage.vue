@@ -1,5 +1,11 @@
 <template>
   <div class="h-screen w-full dark:bg-gray-900 dark:text-white">
+    <ConfirmModal
+      :show="modalState.show"
+      :message="modalState.message"
+      @confirm="onConfirm"
+      @cancel="onCancel"
+    />
     <AddClientLabels :open="showModal" @close="showModal = false" @confirm="handleLabelsAdded" />
     <div class="h-full w-full dark:bg-gray-900 dark:text-white">
       <div class="grid grid-rows-[auto_auto_1fr] h-full">
@@ -63,9 +69,9 @@
 
             <button
               class="text-sm font-medium text-gray-50 bg-black dark:bg-gray-100 dark:hover:bg-gray-100/70 dark:text-gray-900 py-1 px-2 rounded-lg"
-              @click="goToQueue"
+              @click="goBack"
             >
-              Go To Queue
+              Go Back
             </button>
           </template>
         </Header>
@@ -204,6 +210,14 @@
                   Add
                 </button>
 
+                <button
+                  v-if="hasUnsavedChanges"
+                  class="px-3 py-1.5 text-sm font-medium rounded-lg bg-blue-600 text-white hover:bg-blue-700 transition"
+                  @click="saveLabelsConfirmed"
+                >
+                  Save
+                </button>
+
                 <template v-if="selectedLabels.length > 0">
                   <button
                     class="px-3 py-1.5 text-sm font-medium rounded-lg bg-blue-600 text-white hover:bg-blue-700 transition"
@@ -248,12 +262,44 @@
                     />
                   </div>
 
+                  <!-- State Indicator Badge -->
+                  <div
+                    v-if="isLabelDirty(label.id) || label._state === 'unsaved'"
+                    class="absolute top-2 right-2 z-10 group cursor-default"
+                  >
+                    <span
+                      :class="[
+                        'w-3 h-3 rounded-full block',
+                        label._state === 'unsaved'
+                          ? 'bg-blue-500'
+                          : isLabelDirty(label.id)
+                            ? 'bg-yellow-500'
+                            : 'bg-gray-400'
+                      ]"
+                    ></span>
+
+                    <!-- Tooltip -->
+                    <span
+                      class="absolute right-0 -translate-y-full mb-1 hidden group-hover:block text-xs bg-gray-900 text-white px-2 py-1 rounded whitespace-nowrap shadow-md"
+                    >
+                      {{
+                        label._state === 'unsaved'
+                          ? 'Unsaved'
+                          : isLabelDirty(label.id)
+                            ? 'Edited'
+                            : 'Unknown'
+                      }}
+                    </span>
+                  </div>
+
                   <LabelCardV2
                     v-model="labelModels[label.id]"
+                    :client-editable="false"
+                    :show-edit-status="false"
                     :current-date="currentDate"
-                    :client-name="client.name"
+                    :current-user="currentUser"
                     @remove="() => removeLabel(label.id)"
-                    @update="() => updateLabel(label.id)"
+                    @update="(updated) => updateLabel(label.id, updated)"
                     @queue="() => queueLabel(label.id)"
                     @print="() => printLabel(label.id)"
                   />
@@ -277,79 +323,163 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, onUnmounted } from 'vue'
+import { ref, reactive, computed, onMounted, onUnmounted, toRaw, watch } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
+import { useAlerts } from '../composables/useAlerts.js'
+import { soothingPrinterSound } from '../utils/utils.js'
+
 import Header from '../components/Header.vue'
 import MoreMenu from '../components/MoreMenu.vue'
 import LabelCardV2 from '../components/LabelCardV2.vue'
-import { useRoute, useRouter } from 'vue-router'
-import { useAlerts } from '../composables/useAlerts.js'
 import AddClientLabels from './AddClientLabels.vue'
-
-const showModal = ref(false)
-
-const router = useRouter()
+import ConfirmModal from '../components/ConfirmModal.vue'
 
 // Client data
 const client = ref({})
-
 const originalClient = ref({ ...client.value })
+const currentUser = ref('')
+const clientCount = ref(10)
+
+// Editing and refreshing
 const isEditing = ref(false)
-const route = useRoute()
-const alerts = useAlerts()
 const isRefreshing = ref(false)
 
 // Labels data
 const labels = ref([])
-
 const newUnsavedLabels = ref([])
+const labelModels = ref({})
+const selectedLabels = ref([])
+const searchProduct = ref('')
+const currentDate = ref(new Date().toLocaleString())
+const deletedLabelIds = ref([])
 
-// const labelModels = ref({})
-// labels.value.forEach((label) => {
-//   labelModels.value[label.id] = { ...label }
-// })
+// UI and modal
+const showModal = ref(false)
 
-// Handle when user confirms label selection
-function handleLabelsAdded(selectedLabels) {
-  console.log('Labels added:', selectedLabels)
+// Routing
+const route = useRoute()
+const router = useRouter()
 
-  // Each label in selectedLabels has:
-  // - id: original label ID
-  // - name: label name
-  // - tempId: unique temporary ID (for unsaved items)
-  // - instructions: user's custom instructions/notes
+// Alerts
+const alerts = useAlerts()
 
-  // Add your logic here, e.g.:
-  // - Save to database
-  // - Add to local state
-  // - Update UI
-
-  // Example:
-  selectedLabels.forEach((label) => {
-    labels.value.push({
-      id: label.tempId, // or generate new ID after saving to DB
-      product: label.name,
-      instructions: label.instructions
-      // ... other fields
-    })
-  })
-
-  // Close modal
-  showModal.value = false
-}
-
-const labelModels = computed(() => {
-  return [...labels.value, ...newUnsavedLabels.value]
+// modal confirm helper
+const modalState = reactive({
+  show: false,
+  message: '',
+  resolve: null
 })
 
-const searchProduct = ref('')
-const selectedLabels = ref([])
-const currentDate = ref(new Date().toLocaleString())
+// ----- Helpers -----
+const confirm = (message) => {
+  return new Promise((resolve) => {
+    modalState.message = message
+    modalState.resolve = resolve
+    modalState.show = true
+  })
+}
+
+const onConfirm = () => {
+  modalState.resolve(true)
+  modalState.show = false
+}
+
+const onCancel = () => {
+  modalState.resolve(false)
+  modalState.show = false
+}
 
 // Scroll handling
 const labelsContainer = ref(null)
 const isDesktop = ref(window.matchMedia('(min-width: 768px)').matches)
 const mediaQuery = window.matchMedia('(min-width: 768px)')
 
+const filteredLabels = computed(() => {
+  const allLabels = [...labels.value, ...newUnsavedLabels.value]
+
+  if (!searchProduct.value) return allLabels
+
+  const query = searchProduct.value.toLowerCase()
+  return allLabels.filter((label) => label.product?.toLowerCase().includes(query))
+})
+
+const hasUnsavedChanges = computed(() => {
+  // Check for deleted labels
+  if (deletedLabelIds.value.length > 0) return true
+
+  // Check for new unsaved labels
+  if (newUnsavedLabels.value.length > 0) return true
+
+  // Check for dirty labels - compare labelModels with source labels
+  return labels.value.some((sourceLabel) => {
+    const normalizedId = normalizeId(sourceLabel.id)
+    const model = labelModels.value[normalizedId]
+
+    if (!model) return false
+
+    // Check if any field has changed
+    return (
+      model.product !== sourceLabel.product ||
+      model.instructions !== sourceLabel.instructions ||
+      model.warning !== sourceLabel.warning
+    )
+  })
+})
+
+// Helper function to normalize ID for comparison (handles both UUID strings and numbers)
+const normalizeId = (id) => String(id)
+
+// Helper function to check if a label has unsaved changes
+const isLabelDirty = (labelId) => {
+  const normalizedId = normalizeId(labelId)
+  const sourceLabel = labels.value.find((l) => normalizeId(l.id) === normalizedId)
+  const model = labelModels.value[normalizedId]
+
+  if (!sourceLabel || !model) return false
+
+  return (
+    model.product !== sourceLabel.product ||
+    model.instructions !== sourceLabel.instructions ||
+    model.warning !== sourceLabel.warning
+  )
+}
+
+// Function to sync models with source data
+const syncLabelModels = () => {
+  // Add saved labels (but preserve existing edits)
+  labels.value.forEach((l) => {
+    const normalizedId = normalizeId(l.id)
+    if (!labelModels.value[normalizedId]) {
+      // New label, create fresh model
+      labelModels.value[normalizedId] = { ...l, client: client.value.name }
+    }
+    // If it exists, keep it to preserve edits
+  })
+
+  // Add unsaved labels (but preserve existing edits)
+  newUnsavedLabels.value.forEach((l) => {
+    const normalizedId = normalizeId(l.id)
+    if (!labelModels.value[normalizedId]) {
+      // New label, create fresh model
+      labelModels.value[normalizedId] = { ...l, client: client.value.name }
+    }
+    // If it exists, keep it to preserve edits
+  })
+
+  // Remove models that no longer exist in source data
+  const allIds = new Set([
+    ...labels.value.map((l) => normalizeId(l.id)),
+    ...newUnsavedLabels.value.map((l) => normalizeId(l.id))
+  ])
+
+  Object.keys(labelModels.value).forEach((id) => {
+    if (!allIds.has(id)) {
+      delete labelModels.value[id]
+    }
+  })
+}
+
+// Scroll handling
 const handleWheel = (e) => {
   e.preventDefault()
   labelsContainer.value.scrollLeft += e.deltaY + e.deltaX
@@ -364,20 +494,29 @@ const handleMediaChange = (e) => {
   }
 }
 
-// Computed
-const filteredLabels = computed(() => {
-  if (!searchProduct.value) return labels.value
-
-  const query = searchProduct.value.toLowerCase()
-  return labels.value.filter((label) => label.product.toLowerCase().includes(query))
-})
-
 // Client Methods
-const saveClient = () => {
-  originalClient.value = { ...client.value }
-  isEditing.value = false
-  // Add your save logic here (API call, etc.)
-  console.log('Client saved:', client.value)
+const getClient = async (id) => {
+  try {
+    const cl = await window.api.getClientById(id)
+    client.value = cl
+    originalClient.value = { ...cl }
+  } catch (error) {
+    console.error('Failed to fetch client:', error)
+    alerts.error('Failed to load client')
+  }
+}
+
+const saveClient = async () => {
+  const data = client.value
+  try {
+    await window.api.updateClient(route.params.id, data.name, data.contact, data.email)
+    originalClient.value = { ...client.value }
+    isEditing.value = false
+    alerts.success('Client updated successfully')
+  } catch (error) {
+    console.error('Failed to save client:', error)
+    alerts.error('Failed to save client')
+  }
 }
 
 const cancelEdit = () => {
@@ -385,25 +524,47 @@ const cancelEdit = () => {
   isEditing.value = false
 }
 
-const getClientLabels = async (id) => {
-  const cl = await window.api.getClientLabels(id)
-  console.log(cl)
-  labels.value = cl
-  labelModels.value = {}
-  cl.forEach((l) => {
-    labelModels.value[l.id] = { ...l }
-  })
-}
-
-const getClient = async (id) => {
-  const cl = await window.api.getClientById(id)
-  client.value = cl
-  originalClient.value = { ...cl }
-}
-
 // Label Methods
-const toggleLabelSelection = (labelId) => {
-  const index = selectedLabels.value.indexOf(labelId)
+const getClientLabels = async (id) => {
+  try {
+    const cl = await window.api.getClientLabels(id)
+    labels.value = cl.map((l) => ({
+      ...l,
+      _state: 'saved',
+      _dirty: false
+    }))
+    // Filter out pending deletions after fetch
+    labels.value = labels.value.filter(
+      (l) => !deletedLabelIds.value.some((did) => normalizeId(did) === normalizeId(l.id))
+    )
+    syncLabelModels() // Sync after fetching labels
+  } catch (error) {
+    console.error('Failed to fetch labels:', error)
+    alerts.error('Failed to load labels')
+  }
+}
+
+function handleLabelsAdded(selected) {
+  selected.forEach((l) => {
+    newUnsavedLabels.value.push({
+      id: l.tempId,
+      product: l.product,
+      instructions: l.instructions,
+      warning: l.warning,
+      _state: 'unsaved',
+      _dirty: false
+    })
+  })
+
+  syncLabelModels() // Sync after adding new labels
+  showModal.value = false
+  alerts.success(`Added ${selected.length} new label(s)`)
+}
+
+function toggleLabelSelection(labelId) {
+  const normalizedId = normalizeId(labelId)
+  const index = selectedLabels.value.findIndex((id) => normalizeId(id) === normalizedId)
+
   if (index > -1) {
     selectedLabels.value.splice(index, 1)
   } else {
@@ -411,74 +572,407 @@ const toggleLabelSelection = (labelId) => {
   }
 }
 
-const addNewLabel = () => {
-  const newLabel = {
-    id: `L-${String(labels.value.length + 1).padStart(3, '0')}`,
-    product: 'New Medication',
-    instructions: '',
-    dispensedBy: '',
-    warning: ''
+function removeLabel(labelId) {
+  const normalizedId = normalizeId(labelId)
+  const l = labelModels.value[normalizedId]
+
+  if (!l) {
+    alerts.error('Label not found')
+    return
   }
-  labels.value.push(newLabel)
-  labelModels.value[newLabel.id] = { ...newLabel }
-  console.log('New label added:', newLabel)
+
+  if (l._state === 'unsaved') {
+    newUnsavedLabels.value = newUnsavedLabels.value.filter(
+      (x) => normalizeId(x.id) !== normalizedId
+    )
+    delete labelModels.value[normalizedId]
+    alerts.info('Unsaved label removed')
+  } else {
+    deletedLabelIds.value.push(labelId)
+    labels.value = labels.value.filter((x) => normalizeId(x.id) !== normalizedId)
+    delete labelModels.value[normalizedId]
+    alerts.success('Label deleted')
+  }
+
+  // Remove from selection
+  selectedLabels.value = selectedLabels.value.filter((id) => normalizeId(id) !== normalizedId)
 }
 
-const removeLabel = (labelId) => {
-  const index = labels.value.findIndex((l) => l.id === labelId)
-  if (index > -1) {
-    labels.value.splice(index, 1)
-    delete labelModels.value[labelId]
-    selectedLabels.value = selectedLabels.value.filter((id) => id !== labelId)
+function updateLabel(labelId, updated) {
+  const normalizedId = normalizeId(labelId)
+  const l = labelModels.value[normalizedId]
+
+  if (!l) {
+    console.warn('Label model not found for update:', labelId)
+    return
   }
-  console.log('Label removed:', labelId)
+
+  // Update the model directly (this is now safe since it's a ref)
+  Object.assign(l, updated)
+
+  // No need to manually track dirty state anymore -
+  // hasUnsavedChanges computed will detect the change by comparing with source
+
+  alerts.info('Label updated (not saved)')
 }
 
-const updateLabel = (labelId) => {
-  console.log('Label updated:', labelId, labelModels.value[labelId])
+async function saveLabels() {
+  try {
+    // Save new unsaved labels
+    const createPromises = newUnsavedLabels.value.map(async (l) => {
+      const normalizedId = normalizeId(l.id)
+      const model = labelModels.value[normalizedId]
+
+      // Use the model data (which has user edits) instead of the source
+      const data = {
+        product: model.product,
+        instructions: model.instructions,
+        warning: model.warning
+      }
+
+      const res = await window.api.createClientLabel(
+        route.params.id,
+        data.product,
+        data.instructions,
+        data.warning
+      )
+      return { ...data, id: res.lastInsertRowid, _state: 'saved', _dirty: false }
+    })
+
+    await Promise.all(createPromises)
+
+    // Add created labels to source
+    // labels.value.push(...createdLabels)
+    newUnsavedLabels.value = []
+
+    // Find dirty labels by comparing models with source
+    const dirtyUpdates = labels.value
+      .filter((sourceLabel) => {
+        const normalizedId = normalizeId(sourceLabel.id)
+        const model = labelModels.value[normalizedId]
+
+        if (!model) return false
+
+        // Check if any field has changed
+        return (
+          model.product !== sourceLabel.product ||
+          model.instructions !== sourceLabel.instructions ||
+          model.warning !== sourceLabel.warning
+        )
+      })
+      .map((sourceLabel) => ({
+        id: sourceLabel.id,
+        normalizedId: normalizeId(sourceLabel.id)
+      }))
+
+    // Update dirty labels using model data
+    const updatePromises = dirtyUpdates.map(async ({ id, normalizedId }) => {
+      const model = labelModels.value[normalizedId]
+
+      const data = {
+        product: model.product,
+        instructions: model.instructions,
+        warning: model.warning
+      }
+
+      await window.api.updateClientLabel(id, model.product, model.instructions, model.warning)
+
+      // Update source label with saved data
+      const labelIndex = labels.value.findIndex((l) => normalizeId(l.id) === normalizedId)
+      if (labelIndex > -1) {
+        labels.value[labelIndex].product = data.product
+        labels.value[labelIndex].instructions = data.instructions
+        labels.value[labelIndex].warning = data.warning
+      }
+    })
+
+    await Promise.all(updatePromises)
+
+    // Handle deletions
+    const deletePromises = deletedLabelIds.value.map((id) => window.api.deleteClientLabel(id))
+    await Promise.all(deletePromises)
+    deletedLabelIds.value = []
+
+    // Sync models after saving to ensure they match source
+    // syncLabelModels()
+    refreshClientLabels()
+
+    alerts.success('All changes saved')
+  } catch (error) {
+    console.error('Save error:', error)
+    alerts.error('Failed to save some changes')
+  }
+}
+
+const saveLabelsConfirmed = async () => {
+  if (await confirm('Save all changes to labels?')) {
+    await saveLabels()
+  }
+  // if (!confirm('Save all changes to labels?')) return
+
+  // try {
+  //   await saveLabels()
+  // } catch (error) {
+  //   console.error('Print queue error:', error)
+  //   alerts.error('Failed to print queue')
+  // }
 }
 
 const queueLabel = (labelId) => {
-  console.log('Label queued:', labelId)
+  const normalizedId = normalizeId(labelId)
+  const label = labelModels.value[normalizedId]
+
+  if (!label) {
+    alerts.error('Label not found')
+    return
+  }
+
+  // Add to queue logic here
+  alerts.success('Label added to queue')
 }
 
-const printLabel = (labelId) => {
-  console.log('Label printed:', labelId)
-}
+const printLabel = async (id) => {
+  const normalizedId = normalizeId(id)
+  const label = labelModels.value[normalizedId]
 
-// Bulk Actions
-const bulkPrint = () => {
-  console.log('Bulk print:', selectedLabels.value)
-  selectedLabels.value = []
-}
+  if (!label) {
+    alerts.error('Label not found')
+    return
+  }
 
-const bulkQueue = () => {
-  console.log('Bulk queue:', selectedLabels.value)
-  selectedLabels.value = []
-}
-
-const bulkDelete = () => {
-  if (confirm(`Delete ${selectedLabels.value.length} selected labels?`)) {
-    labels.value = labels.value.filter((l) => !selectedLabels.value.includes(l.id))
-    selectedLabels.value.forEach((id) => delete labelModels.value[id])
-    selectedLabels.value = []
+  try {
+    soothingPrinterSound()
+    await window.api.printerPrint([
+      {
+        ...toRaw(label),
+        client: client.value ? JSON.parse(JSON.stringify(toRaw(client.value))) : null,
+        user: currentUser.value
+      }
+    ])
+    alerts.success('Label sent to printer')
+  } catch (error) {
+    console.error('Print error:', error)
+    alerts.error('Failed to print label')
   }
 }
 
+const printQueue = async () => {
+  if (!confirm('Print all labels in the queue?')) return
+
+  try {
+    soothingPrinterSound()
+    const jobList = Object.values(labelModels.value).map((label) => ({
+      ...toRaw(label),
+      client: client.value ? JSON.parse(JSON.stringify(toRaw(client.value))) : null,
+      user: currentUser.value
+    }))
+
+    await window.api.printerPrint(jobList)
+    alerts.success(`Sent ${jobList.length} label(s) to the printer`)
+  } catch (error) {
+    console.error('Print queue error:', error)
+    alerts.error('Failed to print queue')
+  }
+}
+
+const confirmClearQueue = () => {
+  printQueue()
+}
+
+// Bulk Actions
+const bulkPrint = async () => {
+  if (!selectedLabels.value.length) {
+    alerts.error('No labels selected to print')
+    return
+  }
+
+  try {
+    // Get labels using normalized IDs
+    const jobs = selectedLabels.value
+      .map((id) => {
+        const normalizedId = normalizeId(id)
+        return labelModels.value[normalizedId]
+      })
+      .filter(Boolean)
+
+    if (!jobs.length) {
+      alerts.error('Selected labels not found')
+      return
+    }
+
+    // Prepare job list with client and user data
+    const jobList = jobs.map((j) => ({
+      ...toRaw(j),
+      client: client.value ? JSON.parse(JSON.stringify(toRaw(client.value))) : null,
+      user: currentUser.value
+    }))
+
+    soothingPrinterSound()
+    await window.api.printerPrint(jobList)
+    alerts.success(`Sent ${jobList.length} label(s) to the printer`)
+
+    // Clear selection after successful print
+    selectedLabels.value = []
+  } catch (err) {
+    console.error('Bulk print error:', err)
+    alerts.error('Failed to send jobs to printer')
+  }
+}
+
+const bulkQueue = async () => {
+  if (!selectedLabels.value.length) {
+    alerts.error('No labels selected to queue')
+    return
+  }
+
+  try {
+    const successCount = []
+    const failedCount = []
+
+    // Process each selected label one at a time
+    for (const labelId of selectedLabels.value) {
+      const normalizedId = normalizeId(labelId)
+      const label = labelModels.value[normalizedId]
+
+      if (!label) {
+        failedCount.push(labelId)
+        continue
+      }
+
+      try {
+        // Send label data to API - one at a time
+        await window.api.addToQueue({
+          product: label.product,
+          instructions: label.instructions,
+          warning: label.warning,
+          client: client.value.name
+        })
+
+        successCount.push(labelId)
+
+        // If it was an unsaved label, remove it from the unsaved list
+        if (label._state === 'unsaved') {
+          newUnsavedLabels.value = newUnsavedLabels.value.filter(
+            (x) => normalizeId(x.id) !== normalizedId
+          )
+          delete labelModels.value[normalizedId]
+        }
+      } catch (error) {
+        console.error(`Failed to queue label ${labelId}:`, error)
+        failedCount.push(labelId)
+      }
+    }
+
+    // Show results
+    if (successCount.length > 0) {
+      alerts.success(`Successfully queued ${successCount.length} label(s)`)
+    }
+
+    if (failedCount.length > 0) {
+      alerts.error(`Failed to queue ${failedCount.length} label(s)`)
+    }
+
+    // Clear selection
+    selectedLabels.value = []
+  } catch (error) {
+    console.error('Bulk queue error:', error)
+    alerts.error('Failed to queue labels')
+  }
+}
+
+const bulkDelete = async () => {
+  if (!selectedLabels.value.length) {
+    alerts.error('No labels selected to delete')
+    return
+  }
+
+  if (await confirm(`Delete ${selectedLabels.value.length} selected label(s)?`)) {
+    try {
+      const normalizedIds = selectedLabels.value.map(normalizeId)
+
+      // Separate saved and unsaved labels
+      const savedToDelete = []
+      const unsavedToDelete = []
+
+      normalizedIds.forEach((normalizedId) => {
+        const label = labelModels.value[normalizedId]
+        if (label) {
+          if (label._state === 'unsaved') {
+            unsavedToDelete.push(normalizedId)
+          } else {
+            savedToDelete.push(normalizedId)
+          }
+        }
+      })
+
+      // Queue saved labels for deletion
+      savedToDelete.forEach((normalizedId) => {
+        const originalId = labels.value.find((l) => normalizeId(l.id) === normalizedId)?.id
+        if (originalId) {
+          deletedLabelIds.value.push(originalId)
+        }
+      })
+
+      // Remove from local arrays
+      labels.value = labels.value.filter((l) => {
+        const normalizedId = normalizeId(l.id)
+        return !normalizedIds.includes(normalizedId)
+      })
+
+      newUnsavedLabels.value = newUnsavedLabels.value.filter((l) => {
+        const normalizedId = normalizeId(l.id)
+        return !normalizedIds.includes(normalizedId)
+      })
+
+      // Remove from labelModels
+      normalizedIds.forEach((id) => {
+        delete labelModels.value[id]
+      })
+
+      alerts.success(`Deleted ${selectedLabels.value.length} label(s)`)
+      selectedLabels.value = []
+    } catch (error) {
+      console.error('Bulk delete error:', error)
+      alerts.error('Failed to delete some labels')
+    }
+  }
+}
+
+// Refresh Methods
 const refresh = () => {
   getClient(route.params.id)
+  getClientLabels(route.params.id)
+}
+
+const refreshClientLabels = () => {
   getClientLabels(route.params.id)
 }
 
 const refreshClient = async () => {
   if (isRefreshing.value) return
   isRefreshing.value = true
-  await refresh()
 
-  setTimeout(() => {
-    isRefreshing.value = false
-    alerts.info('Client list refreshed.')
-  }, 1000)
+  try {
+    await refresh()
+    alerts.info('Client data refreshed')
+  } catch (error) {
+    console.error('Refresh error:', error)
+    alerts.error('Failed to refresh client data')
+  } finally {
+    setTimeout(() => {
+      isRefreshing.value = false
+    }, 1000)
+  }
+}
+
+// Navigation and Actions
+const goBack = () => {
+  router.back()
+}
+
+const handeLogout = async () => {
+  await window.api.logoutUser()
+  router.replace({ name: 'LoginPage' })
 }
 
 const moreActions = [
@@ -488,15 +982,25 @@ const moreActions = [
   },
   {
     label: 'Logout',
-    handler: (id) => router.push({ name: 'Client', params: { id } })
+    handler: async () => await handeLogout()
   }
 ]
 
-onMounted(() => {
+onMounted(async () => {
   refresh()
-  filteredLabels
+
+  try {
+    const user = await window.api.getMe()
+    currentUser.value = user?.name || 'Unknown User'
+  } catch (error) {
+    console.error('Failed to get current user:', error)
+  }
+
+  syncLabelModels() // Initial sync
+
   mediaQuery.addEventListener('change', handleMediaChange)
-  if (isDesktop.value) {
+
+  if (isDesktop.value && labelsContainer.value) {
     labelsContainer.value.addEventListener('wheel', handleWheel, { passive: false })
   }
 })

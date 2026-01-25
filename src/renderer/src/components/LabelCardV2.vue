@@ -4,13 +4,23 @@
   >
     <!-- Title -->
     <div
-      class="flex w-full rounded-t-lg justify-center items-center border-b border-b-gray-300/60 dark:border-b-gray-700 text-lg font-bold"
+      class="flex w-full rounded-t-lg justify-center items-center border-b border-b-gray-300/60 dark:border-b-gray-700 text-lg font-bold relative"
     >
       <input
         v-model="label.product"
         type="text"
         class="w-full h-8 ps-1 text-center focus:outline focus:outline-blue-500/50 block"
       />
+      <!-- Edit Status Badge -->
+      <span
+        v-if="showEditStatus && label._dirty"
+        class="absolute right-2 top-1/2 -translate-y-1/2 w-2.5 h-2.5 rounded-full bg-yellow-500 dark:bg-yellow-400 cursor-help group"
+        title="Edited"
+      >
+        <span class="absolute left-1/2 -translate-x-1/2 bottom-full mb-2 px-2 py-1 text-xs font-semibold rounded bg-gray-900 text-white dark:bg-gray-100 dark:text-gray-900 whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
+          Edited
+        </span>
+      </span>
     </div>
 
     <!-- Directions -->
@@ -27,17 +37,21 @@
         <div class="flex gap-1">
           <strong>Name:</strong>
           <input
+            v-model="label.client"
             type="text"
             class="border border-gray-300/60 dark:border-gray-500 w-30 h-6 ps-1 focus:outline focus:outline-blue-500/50 block rounded-xs"
-            :value="clientName"
+            :disabled="!clientEditable"
           />
         </div>
         <div class="flex gap-1">
           <strong>Disp. by:</strong>
+          <!-- v-model="label.dispensedBy" -->
           <input
-            v-model="label.dispensedBy"
+            :value="currentUser"
             type="text"
             class="border border-gray-300/60 dark:border-gray-500 w-20 h-6 ps-1 focus:outline focus:outline-blue-500/50 block rounded-xs"
+            readonly
+            disabled="true"
           />
         </div>
       </div>
@@ -70,15 +84,48 @@
 </template>
 
 <script setup>
+import { watch } from 'vue'
 import Button from './Button.vue'
 
 const label = defineModel({ type: Object, required: true })
+
 defineProps({
   currentDate: { type: String, required: true },
-  clientName: { type: String, required: false }
+  currentUser: { type: String, required: true },
+  clientName: { type: String, required: false },
+  clientEditable: { type: Boolean, required: false, default: () => true },
+  showEditStatus: { type: Boolean, required: false, default: () => true }
 })
 
 defineEmits(['remove', 'update', 'queue', 'print'])
+
+const trackedKeys = ['product', 'instructions', 'warning']
+
+// Watch for changes to tracked fields and set dirty flag
+watch(
+  () => {
+    // Guard against undefined label value
+    if (!label.value) return null
+
+    return {
+      product: label.value.product,
+      instructions: label.value.instructions,
+      warning: label.value.warning
+    }
+  },
+  (newVal, oldVal) => {
+    // If newVal is null (from the guard) or oldVal is missing, stop
+    if (!newVal || !oldVal) return
+
+    for (const key of trackedKeys) {
+      if (newVal[key] !== oldVal[key]) {
+        label.value._dirty = true
+        break
+      }
+    }
+  },
+  { deep: true }
+)
 
 // Configure action buttons declaratively
 const actions = [

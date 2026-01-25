@@ -26,6 +26,7 @@ class AppDatabase {
         facility_contact TEXT NOT NULL,
         queue_size INTEGER DEFAULT 100,
         date_format TEXT,
+        alert_sound INTEGER DEFAULT 1,
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP
       );
       CREATE TABLE IF NOT EXISTS labels (
@@ -67,7 +68,7 @@ class AppDatabase {
     this.db.exec(schema)
   }
 
-  deleteClientLabelQuery(labels) {
+  deleteClientLabelsQuery(labels) {
     const placeholders = labels.map(() => '?').join(', ')
     return this.db.prepare(
       `DELETE FROM client_labels WHERE client_id = ? AND id IN (${placeholders})`
@@ -88,19 +89,68 @@ class AppDatabase {
     this.deleteClient = this.db.prepare('DELETE FROM clients WHERE id = ?')
     this.countClientsQ = this.db.prepare('SELECT COUNT(*) as count FROM clients')
     this.getClientLabels = this.db.prepare(
-      'SELECT product, instructions, warning, created_at FROM client_labels WHERE client_id = ?'
+      'SELECT id, product, instructions, warning, created_at FROM client_labels WHERE client_id = ?'
+    )
+    this.updateClientQ = this.db.prepare(
+      'UPDATE clients SET name = ?, contact = ?, email = ? WHERE id = ?'
     )
     this.addClientLabel = this.db.prepare(
       'INSERT INTO client_labels (client_id, product, instructions, warning) VALUES (?, ?, ?, ?)'
     )
+    this.updateClientLabelQ = this.db.prepare(
+      'UPDATE client_labels SET product = ?, instructions = ?, warning = ? WHERE id = ?'
+    )
+    this.copyClientLabelToQueueQ = this.db.prepare(`
+      INSERT INTO queue (product, instructions, warning, client)
+      SELECT cl.product, cl.instructions, cl.warning, c.name
+      FROM client_labels cl
+      INNER JOIN clients c ON cl.client_id = c.id
+      WHERE cl.client_id = ?
+    `)
+    this.addClientLabels = this.db.transaction((client_labels) => {
+      for (const label of client_labels) {
+        this.addClientLabel.run(label.client_id, label.product, label.instructions, label.warning)
+      }
+    })
+    this.getClientLabelsWithClientNameQ = this.db.prepare(`
+      SELECT
+        cl.product,
+        cl.instructions,
+        cl.warning,
+        cl.created_at,
+        c.name AS client
+      FROM client_labels cl
+      INNER JOIN clients c ON cl.client_id = c.id
+      WHERE cl.client_id = ?
+    `)
+    this.deleteClientLabelQ = this.db.prepare('DELETE FROM client_labels WHERE id = ?')
 
     // this.deleteClient
 
     // --- Settings (Single Record pattern) ---
     this.getSettings = this.db.prepare('SELECT * FROM settings LIMIT 1')
+    // this.updateSettings = this.db.prepare(`
+    //   INSERT OR REPLACE INTO settings (id, facility_name, facility_address, facility_contact, alert_sound, date_format, queue_size)
+    //   VALUES (1, ?, ?, ?, ?, ?, ?)
+    // `)
     this.updateSettings = this.db.prepare(`
-      INSERT OR REPLACE INTO settings (id, facility_name, facility_address, facility_contact)
-      VALUES (1, ?, ?, ?)
+      INSERT OR REPLACE INTO settings (
+        id,
+        date_format,
+        facility_address,
+        facility_contact,
+        facility_name,
+        queue_size,
+        alert_sound
+      ) VALUES (
+        1,
+        @date_format,
+        @facility_address,
+        @facility_contact,
+        @facility_name,
+        @queue_size,
+        @alert_sound
+      )
     `)
 
     // --- Labels ---
@@ -126,11 +176,16 @@ class AppDatabase {
     this.removeFromQueue = this.db.prepare('DELETE FROM queue WHERE id = ?')
     this.clearQueue = this.db.prepare('DELETE FROM queue')
     this.countQueue = this.db.prepare('SELECT COUNT(*) as count FROM queue')
+    this.countClientLabelsByIdQ = this.db.prepare(`
+      SELECT COUNT(*) as count
+      FROM client_labels
+      WHERE client_id = ?
+    `)
   }
 
   // Settings
   saveSettings(data) {
-    return this.updateSettings.run(data.name, data.address, data.contact)
+    return this.updateSettings.run(data)
   }
 
   fetchSettings() {
@@ -199,21 +254,47 @@ class AppDatabase {
   getClientById(id) {
     return this.getClient.get(id)
   }
-  createClient(username, contact, email) {
-    return this.addClient.run(username, contact, email)
+  createClient(name, contact, email) {
+    return this.addClient.run(name, contact, email)
+  }
+
+  updateClient(id, name, contact, email) {
+    return this.updateClientQ.run(name, contact, email, id)
   }
   countClients() {
     const row = this.countClientsQ.get()
     return row.count
   }
+  copyClientLabelToQueue(id) {
+    return this.copyClientLabelToQueueQ.run(id)
+  }
+  countClientLabels(id) {
+    const row = this.countClientLabelsByIdQ.get(id)
+    return row ? row.count : 0
+  }
   deleteClientById(id) {
     return this.deleteClient.run(id)
   }
   deleteClientLabels(id, labels) {
-    return this.deleteClientLabelQuery(labels).run(id, ...labels)
+    return this.deleteClientLabelsQuery(labels).run(id, ...labels)
   }
   createClientLabel(client_id, product, instructions, warning) {
     return this.addClientLabel.run(client_id, product, instructions, warning)
+  }
+  createClientLabels(client_labels) {
+    return this.addClientLabels(client_labels)
+  }
+
+  deleteClientLabel(id) {
+    return this.deleteClientLabelQ.run(id)
+  }
+
+  updateClientLabel(id, product, instructions, warning) {
+    return this.updateClientLabelQ.run(product, instructions, warning, id)
+  }
+
+  getClientLabelsWithClientName(id) {
+    return this.getClientLabelsWithClientNameQ.all(id)
   }
 }
 

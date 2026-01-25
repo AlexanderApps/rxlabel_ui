@@ -9,8 +9,11 @@
   >
     <div
       v-if="open"
-      class="fixed inset-0 flex items-center justify-center bg-black/50 backdrop-blur-sm z-50 p-4"
+      class="fixed inset-0 flex items-center justify-center bg-black/50 backdrop-blur-sm z-50 p-4 overflow-hidden"
       @click.self="$emit('close')"
+      @wheel.prevent.stop
+      @touchmove.prevent.stop
+      @scroll.prevent.stop
     >
       <Transition
         enter-active-class="transition-all duration-200"
@@ -22,7 +25,9 @@
       >
         <div
           v-if="open"
-          class="bg-white dark:bg-gray-800 w-full max-w-4xl rounded-2xl shadow-2xl flex flex-col max-h-[85vh]"
+          class="bg-white dark:bg-gray-800 w-full max-w-4xl rounded-2xl shadow-2xl grid grid-rows-[auto_1fr_auto] h-[90vh] max-h-150 sm:max-h-175 lg:max-h-[85vh]"
+          @wheel.stop
+          @touchmove.stop
         >
           <!-- Header -->
           <div
@@ -35,8 +40,8 @@
               </p>
             </div>
             <button
-              @click="$emit('close')"
               class="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors text-gray-500 dark:text-gray-400"
+              @click="$emit('close')"
             >
               <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path
@@ -50,7 +55,7 @@
           </div>
 
           <!-- Fetch State -->
-          <div v-if="loading" class="px-6 py-8 text-center">
+          <div v-if="loading" class="px-6 py-8 flex items-center justify-center">
             <div class="inline-flex items-center gap-3 text-gray-600 dark:text-gray-400">
               <svg class="animate-spin w-5 h-5" fill="none" viewBox="0 0 24 24">
                 <circle
@@ -71,7 +76,7 @@
             </div>
           </div>
 
-          <div v-else-if="error" class="px-6 py-8 text-center">
+          <div v-else-if="error" class="px-6 py-8 flex items-center justify-center">
             <div
               class="inline-flex items-center gap-2 text-red-500 bg-red-50 dark:bg-red-900/20 px-4 py-3 rounded-lg"
             >
@@ -86,12 +91,13 @@
             </div>
           </div>
 
-          <!-- Content -->
-          <div v-else class="flex-1 overflow-hidden px-6 py-5">
-            <div class="grid grid-cols-2 gap-6 h-full">
-              <!-- Available Labels -->
-              <div class="flex flex-col h-full">
-                <div class="flex items-center justify-between mb-3">
+          <!-- Content Grid -->
+          <div v-else class="overflow-hidden min-h-0">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 h-full px-6 py-5">
+              <!-- Available Labels Column -->
+              <div class="grid grid-rows-[auto_auto_1fr] gap-3 min-h-0 overflow-hidden">
+                <!-- Header -->
+                <div class="flex items-center justify-between">
                   <h3
                     class="text-sm font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wide"
                   >
@@ -105,7 +111,7 @@
                 </div>
 
                 <!-- Search Input -->
-                <div class="relative mb-3">
+                <div class="relative">
                   <div
                     class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500"
                   >
@@ -122,18 +128,19 @@
                     v-model="searchQuery"
                     type="text"
                     placeholder="Search labels..."
-                    class="w-full pl-9 pr-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    class="w-[calc(100%-7px)] pl-9 pr-3 py-2 ml-1 text-sm border border-gray-300 dark:border-gray-600 rounded-lg outline-0 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   />
                 </div>
 
+                <!-- Scrollable Labels List -->
                 <div
-                  class="flex-1 border-2 border-gray-200 dark:border-gray-700 rounded-xl overflow-auto bg-gray-50 dark:bg-gray-900/50 max-h-96 custom-scrollbar"
+                  class="border-2 border-gray-200 dark:border-gray-700 rounded-xl overflow-y-auto bg-gray-50 dark:bg-gray-900/50 min-h-0 custom-scrollbar"
                 >
                   <div
                     v-if="filteredLabels.length === 0"
-                    class="flex items-center justify-center h-full text-gray-400 dark:text-gray-500"
+                    class="flex items-center justify-center h-full min-h-50 text-gray-400 dark:text-gray-500"
                   >
-                    <div class="text-center">
+                    <div class="text-center p-4">
                       <svg
                         class="w-12 h-12 mx-auto mb-2 opacity-50"
                         fill="none"
@@ -164,7 +171,7 @@
                     >
                       <div class="flex items-center gap-3 flex-1 min-w-0">
                         <div
-                          class="w-8 h-8 rounded-lg bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center flex-shrink-0"
+                          class="w-8 h-8 rounded-lg bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center shrink-0"
                         >
                           <svg
                             class="w-4 h-4 text-blue-600 dark:text-blue-400"
@@ -195,14 +202,14 @@
                         </div>
                       </div>
                       <button
-                        @click="selectLabel(label)"
-                        :disabled="selected.some((x) => x.id === label.id)"
                         class="px-3 py-1.5 text-xs font-medium rounded-lg transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+                        :disabled="selected.some((x) => x.id === label.id)"
                         :class="
                           selected.some((x) => x.id === label.id)
                             ? 'bg-gray-200 dark:bg-gray-700 text-gray-500 dark:text-gray-400'
                             : 'bg-blue-600 text-white hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600'
                         "
+                        @click="selectLabel(label)"
                       >
                         {{ selected.some((x) => x.id === label.id) ? 'Selected' : 'Select' }}
                       </button>
@@ -211,9 +218,10 @@
                 </div>
               </div>
 
-              <!-- Selected Labels -->
-              <div class="flex flex-col h-full">
-                <div class="flex items-center justify-between mb-3">
+              <!-- Selected Labels Column -->
+              <div class="grid grid-rows-[auto_1fr] gap-3 min-h-0 overflow-hidden">
+                <!-- Header -->
+                <div class="flex items-center justify-between">
                   <h3
                     class="text-sm font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wide"
                   >
@@ -226,14 +234,15 @@
                   </span>
                 </div>
 
+                <!-- Scrollable Selected List -->
                 <div
-                  class="flex-1 border-2 border-blue-200 dark:border-blue-800 rounded-xl overflow-y-auto bg-blue-50/30 dark:bg-blue-900/10 max-h-96 custom-scrollbar"
+                  class="border-2 border-blue-200 dark:border-blue-800 rounded-xl overflow-y-auto bg-blue-50/30 dark:bg-blue-900/10 min-h-0 custom-scrollbar"
                 >
                   <div
                     v-if="selected.length === 0"
-                    class="flex items-center justify-center h-full text-gray-400 dark:text-gray-500"
+                    class="flex items-center justify-center h-full min-h-50 text-gray-400 dark:text-gray-500"
                   >
-                    <div class="text-center">
+                    <div class="text-center p-4">
                       <svg
                         class="w-12 h-12 mx-auto mb-2 opacity-50"
                         fill="none"
@@ -261,7 +270,7 @@
                       <div class="flex items-center justify-between mb-3">
                         <div class="flex items-center gap-2">
                           <div
-                            class="w-6 h-6 rounded-md bg-green-100 dark:bg-green-900/30 flex items-center justify-center flex-shrink-0"
+                            class="w-6 h-6 rounded-md bg-green-100 dark:bg-green-900/30 flex items-center justify-center shrink-0"
                           >
                             <svg
                               class="w-3.5 h-3.5 text-green-600 dark:text-green-400"
@@ -282,9 +291,9 @@
                           </span>
                         </div>
                         <button
-                          @click="removeSelected(idx)"
                           class="p-1.5 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 text-red-500 dark:text-red-400 transition-colors"
                           title="Remove"
+                          @click="removeSelected(idx)"
                         >
                           <svg
                             class="w-4 h-4"
@@ -365,16 +374,16 @@
 
             <div class="flex gap-3">
               <button
-                @click="$emit('close')"
                 class="px-4 py-2 text-sm font-medium border-2 border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 transition-colors"
+                @click="$emit('close')"
               >
                 Cancel
               </button>
 
               <button
-                @click="confirmAdd"
                 :disabled="selected.length === 0"
                 class="px-5 py-2 text-sm font-medium rounded-lg bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-lg shadow-blue-500/30 disabled:shadow-none"
+                @click="confirmAdd"
               >
                 <span v-if="selected.length === 0">Add Labels</span>
                 <span v-else
@@ -404,30 +413,6 @@ const loading = ref(false)
 const error = ref(null)
 const searchQuery = ref('')
 
-// Mock data for demo - matches your label format
-const mockLabels = [
-  {
-    id: 1,
-    product: 'Amoxicillin 500mg',
-    instructions: 'Take with food',
-    warning: 'May cause drowsiness'
-  },
-  { id: 2, product: 'Ibuprofen 200mg', instructions: 'Take after meals', warning: 'Avoid alcohol' },
-  {
-    id: 3,
-    product: 'Paracetamol 500mg',
-    instructions: 'Every 4-6 hours',
-    warning: 'Do not exceed dose'
-  },
-  { id: 4, product: 'Aspirin 75mg', instructions: 'Once daily', warning: 'Take with water' },
-  {
-    id: 5,
-    product: 'Cetirizine 10mg',
-    instructions: 'Before bedtime',
-    warning: 'May cause drowsiness'
-  }
-]
-
 // Computed filtered labels based on search (searches product field)
 const filteredLabels = computed(() => {
   if (!searchQuery.value) return dbLabels.value
@@ -453,8 +438,8 @@ async function loadDbLabels() {
     // Simulate API call
     dbLabels.value = await window.api.getLabels('')
   } catch (e) {
-    console.log(e)
     error.value = 'Failed to fetch labels'
+    console.error(e)
   } finally {
     loading.value = false
   }
@@ -474,7 +459,36 @@ function removeSelected(i) {
 }
 
 function confirmAdd() {
-  emits('confirm', structuredClone(selected.value))
+  const selectedCopy = [...selected.value]
+  emits('confirm', selectedCopy)
   selected.value = []
 }
 </script>
+
+<style scoped>
+.custom-scrollbar::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: #cbd5e0;
+  border-radius: 4px;
+}
+
+.dark .custom-scrollbar::-webkit-scrollbar-thumb {
+  background: #4a5568;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: #a0aec0;
+}
+
+.dark .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: #718096;
+}
+</style>

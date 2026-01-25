@@ -1,4 +1,3 @@
-<!-- SettingsModal.vue -->
 <template>
   <Teleport to="body">
     <Transition name="modal">
@@ -123,6 +122,21 @@
                       d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"
                     />
                   </svg>
+                  <!-- Help Icon -->
+                  <svg
+                    v-if="tab.icon === 'help'"
+                    class="w-5 h-5"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      stroke-width="2"
+                      d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                    />
+                  </svg>
                   {{ tab.label }}
                 </button>
               </nav>
@@ -196,8 +210,8 @@
                     <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                       Font Size
                     </label>
-                    <!-- v-model="settings.appearance.fontSize" -->
                     <select
+                      v-model="settings.font_size"
                       class="w-full px-3 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg outline-0 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     >
                       <option value="small">Small</option>
@@ -205,33 +219,6 @@
                       <option value="large">Large</option>
                     </select>
                   </div>
-
-                  <!-- <div class="flex items-center justify-between">
-                    <div>
-                      <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                        Compact Mode
-                      </label>
-                      <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                        Display more content in less space
-                      </p>
-                    </div>
-                    <button
-                      :class="[
-                        'relative inline-flex h-6 w-11 items-center rounded-full transition-colors',
-                        settings.appearance.compactMode
-                          ? 'bg-blue-600'
-                          : 'bg-gray-200 dark:bg-gray-700'
-                      ]"
-                      @click="settings.appearance.compactMode = !settings.appearance.compactMode"
-                    >
-                      <span
-                        :class="[
-                          'inline-block h-4 w-4 transform rounded-full bg-white transition-transform',
-                          settings.appearance.compactMode ? 'translate-x-6' : 'translate-x-1'
-                        ]"
-                      />
-                    </button>
-                  </div> -->
                 </div>
               </div>
 
@@ -246,11 +233,12 @@
                     <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                       Full Name
                     </label>
-                    <!-- v-model="settings.user.name" -->
                     <input
                       type="text"
                       class="w-full px-3 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg outline-0 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                       placeholder="Enter your name"
+                      :value="currentUser?.name || ''"
+                      readonly
                     />
                   </div>
 
@@ -258,11 +246,12 @@
                     <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                       Email
                     </label>
-                    <!-- v-model="settings.user.email" -->
                     <input
                       type="email"
                       class="w-full px-3 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg outline-0 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                       placeholder="your@email.com"
+                      :value="currentUser?.email || ''"
+                      readonly
                     />
                   </div>
 
@@ -270,11 +259,12 @@
                     <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                       Role
                     </label>
-                    <!-- v-model="settings.user.role" -->
                     <input
                       type="text"
                       class="w-full px-3 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg outline-0 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                       placeholder="e.g., Pharmacist"
+                      :value="currentUser?.role || ''"
+                      readonly
                     />
                   </div>
                 </div>
@@ -291,25 +281,23 @@
                     <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                       Facility Name
                     </label>
-                    <!-- v-model="settings.facility_name" -->
                     <input
                       type="text"
                       class="w-full px-3 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg outline-0 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                       placeholder="Enter facility name"
-                      :value="initialSettings.facility_name"
-                      readonly="true"
+                      v-model="settings.facility_name"
                     />
                   </div>
+
                   <div>
                     <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                       Facility Contact
                     </label>
                     <input
-                      :value="initialSettings.facility_contact"
                       type="text"
                       class="w-full px-3 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg outline-0 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                       placeholder="Enter facility phone number"
-                      readonly="true"
+                      v-model="settings.facility_contact"
                     />
                   </div>
 
@@ -318,11 +306,10 @@
                       Facility Address
                     </label>
                     <textarea
-                      :value="initialSettings.facility_address"
                       rows="3"
                       class="w-full px-3 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg outline-0 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                       placeholder="Enter facility address"
-                      readonly="true"
+                      v-model="settings.facility_address"
                     />
                   </div>
 
@@ -330,71 +317,27 @@
                     <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                       Date Format
                     </label>
-                    <!-- v-model links the selection to your settings object -->
-                    <!-- v-model="settings.appearance.dateFormat" -->
                     <select
-                      :value="initialSettings.date_format"
+                      v-model="settings.date_format"
                       class="w-full px-3 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg outline-0 focus:ring-2 focus:ring-blue-500 focus:border-transparent cursor-pointer"
                     >
-                      <!-- Use a computed property or method to generate the options list -->
                       <option v-for="opt in dateTimeOptions" :key="opt.id" :value="opt.id">
                         {{ opt.label }} — ({{ opt.value }})
                       </option>
                     </select>
                   </div>
+
                   <div>
                     <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                       Queue Size
                     </label>
-                    <!-- v-model="settings.facility_name" -->
                     <input
                       type="number"
                       class="w-full px-3 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg outline-0 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                      placeholder="Enter facility name"
-                      :value="initialSettings.queue_size"
-                      readonly="true"
+                      placeholder="Enter queue size"
+                      v-model.number="settings.queue_size"
                     />
                   </div>
-
-                  <!--
-                  <div>
-                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                      Default Label Size
-                    </label>
-                    <select
-                      v-model="settings.label.defaultSize"
-                      class="w-full px-3 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg outline-0 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    >
-                      <option value="small">Small (2" x 3")</option>
-                      <option value="medium">Medium (3" x 4")</option>
-                      <option value="large">Large (4" x 6")</option>
-                    </select>
-                  </div> -->
-
-                  <!-- <div class="flex items-center justify-between">
-                    <div>
-                      <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                        Auto-print Labels
-                      </label>
-                      <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                        Automatically print when added to queue
-                      </p>
-                    </div>
-                    <button
-                      :class="[
-                        'relative inline-flex h-6 w-11 items-center rounded-full transition-colors',
-                        settings.label.autoPrint ? 'bg-blue-600' : 'bg-gray-200 dark:bg-gray-700'
-                      ]"
-                      @click="settings.label.autoPrint = !settings.label.autoPrint"
-                    >
-                      <span
-                        :class="[
-                          'inline-block h-4 w-4 transform rounded-full bg-white transition-transform',
-                          settings.label.autoPrint ? 'translate-x-6' : 'translate-x-1'
-                        ]"
-                      />
-                    </button>
-                  </div> -->
                 </div>
               </div>
 
@@ -417,72 +360,18 @@
                     <button
                       :class="[
                         'relative inline-flex h-6 w-11 items-center rounded-full transition-colors',
-                        initialSettings.sound ? 'bg-blue-600' : 'bg-gray-200 dark:bg-gray-700'
+                        settings.alert_sound ? 'bg-blue-600' : 'bg-gray-200 dark:bg-gray-700'
                       ]"
-                      @click="settings.sound = !settings.sound"
+                      @click="settings.alert_sound = settings.alert_sound ? 0 : 1"
                     >
                       <span
                         :class="[
                           'inline-block h-4 w-4 transform rounded-full bg-white transition-transform',
-                          initialSettings.sound ? 'translate-x-6' : 'translate-x-1'
+                          settings.alert_sound ? 'translate-x-6' : 'translate-x-1'
                         ]"
                       />
                     </button>
                   </div>
-
-                  <!-- <div class="flex items-center justify-between">
-                    <div>
-                      <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                        Sound Alerts
-                      </label>
-                      <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                        Play sound for notifications
-                      </p>
-                    </div>
-                    <button
-                      :class="[
-                        'relative inline-flex h-6 w-11 items-center rounded-full transition-colors',
-                        settings.notifications.sound
-                          ? 'bg-blue-600'
-                          : 'bg-gray-200 dark:bg-gray-700'
-                      ]"
-                      @click="settings.notifications.sound = !settings.notifications.sound"
-                    >
-                      <span
-                        :class="[
-                          'inline-block h-4 w-4 transform rounded-full bg-white transition-transform',
-                          settings.notifications.sound ? 'translate-x-6' : 'translate-x-1'
-                        ]"
-                      />
-                    </button>
-                  </div> -->
-
-                  <!-- <div class="flex items-center justify-between">
-                    <div>
-                      <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                        Email Notifications
-                      </label>
-                      <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                        Receive notifications via email
-                      </p>
-                    </div>
-                    <button
-                      :class="[
-                        'relative inline-flex h-6 w-11 items-center rounded-full transition-colors',
-                        settings.notifications.email
-                          ? 'bg-blue-600'
-                          : 'bg-gray-200 dark:bg-gray-700'
-                      ]"
-                      @click="settings.notifications.email = !settings.notifications.email"
-                    >
-                      <span
-                        :class="[
-                          'inline-block h-4 w-4 transform rounded-full bg-white transition-transform',
-                          settings.notifications.email ? 'translate-x-6' : 'translate-x-1'
-                        ]"
-                      />
-                    </button>
-                  </div> -->
                 </div>
               </div>
 
@@ -492,55 +381,171 @@
                   Privacy & Security
                 </h3>
 
-                <!-- <div class="space-y-6">
-                  <div class="flex items-center justify-between">
-                    <div>
-                      <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                        Two-Factor Authentication
-                      </label>
-                      <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                        Add an extra layer of security
-                      </p>
-                    </div>
-                    <button
-                      :class="[
-                        'relative inline-flex h-6 w-11 items-center rounded-full transition-colors',
-                        settings.privacy.twoFactor ? 'bg-blue-600' : 'bg-gray-200 dark:bg-gray-700'
-                      ]"
-                      @click="settings.privacy.twoFactor = !settings.privacy.twoFactor"
-                    >
-                      <span
-                        :class="[
-                          'inline-block h-4 w-4 transform rounded-full bg-white transition-transform',
-                          settings.privacy.twoFactor ? 'translate-x-6' : 'translate-x-1'
-                        ]"
-                      />
-                    </button>
+                <div class="space-y-4">
+                  <p class="text-sm text-gray-600 dark:text-gray-400">
+                    Privacy and security settings will be available in future updates.
+                  </p>
+                </div>
+              </div>
+
+              <!-- Help Tab -->
+              <div v-if="activeTab === 'help'">
+                <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+                  Help & Support
+                </h3>
+
+                <div class="space-y-6">
+                  <div
+                    class="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4"
+                  >
+                    <h4 class="font-semibold text-blue-900 dark:text-blue-300 mb-2">Quick Tips</h4>
+                    <ul class="space-y-2 text-sm text-blue-800 dark:text-blue-200">
+                      <li class="flex items-start gap-2">
+                        <svg
+                          class="w-5 h-5 mt-0.5 flex-shrink-0"
+                          fill="currentColor"
+                          viewBox="0 0 20 20"
+                        >
+                          <path
+                            fill-rule="evenodd"
+                            d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
+                            clip-rule="evenodd"
+                          />
+                        </svg>
+                        <span
+                          >Use keyboard shortcuts to navigate faster through the application</span
+                        >
+                      </li>
+                      <li class="flex items-start gap-2">
+                        <svg
+                          class="w-5 h-5 mt-0.5 flex-shrink-0"
+                          fill="currentColor"
+                          viewBox="0 0 20 20"
+                        >
+                          <path
+                            fill-rule="evenodd"
+                            d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
+                            clip-rule="evenodd"
+                          />
+                        </svg>
+                        <span
+                          >Enable sound alerts to get notified when labels are ready to print</span
+                        >
+                      </li>
+                      <li class="flex items-start gap-2">
+                        <svg
+                          class="w-5 h-5 mt-0.5 flex-shrink-0"
+                          fill="currentColor"
+                          viewBox="0 0 20 20"
+                        >
+                          <path
+                            fill-rule="evenodd"
+                            d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
+                            clip-rule="evenodd"
+                          />
+                        </svg>
+                        <span>Customize your date format to match your region's preferences</span>
+                      </li>
+                    </ul>
                   </div>
 
                   <div>
-                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                      Session Timeout
-                    </label>
-                    <select
-                      v-model="settings.privacy.sessionTimeout"
-                      class="w-full px-3 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg outline-0 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    >
-                      <option value="15">15 minutes</option>
-                      <option value="30">30 minutes</option>
-                      <option value="60">1 hour</option>
-                      <option value="0">Never</option>
-                    </select>
+                    <h4 class="font-semibold text-gray-900 dark:text-white mb-3">
+                      Frequently Asked Questions
+                    </h4>
+                    <div class="space-y-3">
+                      <details class="group bg-gray-50 dark:bg-gray-800 rounded-lg p-4">
+                        <summary
+                          class="font-medium text-gray-900 dark:text-white cursor-pointer list-none flex items-center justify-between"
+                        >
+                          <span>How do I change the facility information?</span>
+                          <svg
+                            class="w-5 h-5 transition-transform group-open:rotate-180"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                          >
+                            <path
+                              stroke-linecap="round"
+                              stroke-linejoin="round"
+                              stroke-width="2"
+                              d="M19 9l-7 7-7-7"
+                            />
+                          </svg>
+                        </summary>
+                        <p class="mt-3 text-sm text-gray-600 dark:text-gray-400">
+                          Navigate to the "Label Settings" tab and update your facility name,
+                          address, and contact information. Click "Save Changes" to apply.
+                        </p>
+                      </details>
+
+                      <details class="group bg-gray-50 dark:bg-gray-800 rounded-lg p-4">
+                        <summary
+                          class="font-medium text-gray-900 dark:text-white cursor-pointer list-none flex items-center justify-between"
+                        >
+                          <span>What does queue size mean?</span>
+                          <svg
+                            class="w-5 h-5 transition-transform group-open:rotate-180"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                          >
+                            <path
+                              stroke-linecap="round"
+                              stroke-linejoin="round"
+                              stroke-width="2"
+                              d="M19 9l-7 7-7-7"
+                            />
+                          </svg>
+                        </summary>
+                        <p class="mt-3 text-sm text-gray-600 dark:text-gray-400">
+                          Queue size determines the maximum number of labels that can be queued for
+                          printing at once. Adjust this based on your workflow needs.
+                        </p>
+                      </details>
+
+                      <details class="group bg-gray-50 dark:bg-gray-800 rounded-lg p-4">
+                        <summary
+                          class="font-medium text-gray-900 dark:text-white cursor-pointer list-none flex items-center justify-between"
+                        >
+                          <span>Can I switch between light and dark mode?</span>
+                          <svg
+                            class="w-5 h-5 transition-transform group-open:rotate-180"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                          >
+                            <path
+                              stroke-linecap="round"
+                              stroke-linejoin="round"
+                              stroke-width="2"
+                              d="M19 9l-7 7-7-7"
+                            />
+                          </svg>
+                        </summary>
+                        <p class="mt-3 text-sm text-gray-600 dark:text-gray-400">
+                          Yes! Go to the "Appearance" tab and select your preferred theme: Light,
+                          Dark, or System (which follows your device's theme).
+                        </p>
+                      </details>
+                    </div>
                   </div>
 
-                  <div class="pt-4 border-t border-gray-200 dark:border-gray-700">
+                  <div class="border-t border-gray-200 dark:border-gray-700 pt-6">
+                    <h4 class="font-semibold text-gray-900 dark:text-white mb-3">
+                      Need More Help?
+                    </h4>
+                    <p class="text-sm text-gray-600 dark:text-gray-400 mb-4">
+                      If you're experiencing issues or have questions not covered here, please
+                      contact support.
+                    </p>
                     <button
-                      class="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg font-medium transition-colors"
+                      class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors"
                     >
-                      Change Password
+                      Contact Support
                     </button>
                   </div>
-                </div> -->
+                </div>
               </div>
             </div>
           </div>
@@ -569,9 +574,11 @@
 </template>
 
 <script setup>
-import { ref, reactive, watch, computed } from 'vue'
+import { ref, reactive, computed, onMounted, toRaw } from 'vue'
 
-const props = defineProps({
+const currentUser = ref(null)
+
+defineProps({
   show: {
     type: Boolean,
     default: false
@@ -591,16 +598,31 @@ const tabs = [
   { id: 'user', label: 'User Profile', icon: 'user' },
   { id: 'label', label: 'Label Settings', icon: 'tag' },
   { id: 'notifications', label: 'Notifications', icon: 'bell' },
-  { id: 'privacy', label: 'Privacy', icon: 'shield' }
+  { id: 'privacy', label: 'Privacy', icon: 'shield' },
+  { id: 'help', label: 'Help', icon: 'help' }
 ]
 
-const settings = reactive({ ...props.initialSettings })
+// Initialize settings with default structure matching DB schema
+const settings = reactive({
+  id: null,
+  facility_name: '',
+  facility_address: '',
+  facility_contact: '',
+  queue_size: 100,
+  date_format: 'dt3',
+  alert_sound: 1,
+  theme: 'system',
+  font_size: 'medium',
+  created_at: null
+})
 
-// 2. Generate the 10 UI-friendly options (5 Date, 5 DateTime)
+const settingsOriginal = reactive({})
+
+// Generate date/time format options
 const now = new Date()
 
 const dateTimeOptions = computed(() => [
-  // --- 5 DATE ONLY FORMATS ---
+  // DATE ONLY FORMATS
   { id: 'd1', label: 'Short (US)', value: new Intl.DateTimeFormat('en-US').format(now) },
   {
     id: 'd2',
@@ -616,7 +638,7 @@ const dateTimeOptions = computed(() => [
       year: 'numeric'
     }).format(now)
   },
-  { id: 'd4', label: 'Technical', value: now.toLocaleDateString('en-CA') }, // YYYY-MM-DD
+  { id: 'd4', label: 'Technical', value: now.toLocaleDateString('en-CA') },
   {
     id: 'd5',
     label: 'Day & Month',
@@ -627,7 +649,7 @@ const dateTimeOptions = computed(() => [
     }).format(now)
   },
 
-  // --- 5 DATE + TIME FORMATS ---
+  // DATE + TIME FORMATS
   {
     id: 'dt1',
     label: 'Standard',
@@ -660,46 +682,14 @@ const dateTimeOptions = computed(() => [
   { id: 'dt5', label: 'ISO Style', value: now.toISOString().replace('T', ' ').substring(0, 16) }
 ])
 
-// const settings = reactive({
-//   appearance: {
-//     theme: 'system',
-//     fontSize: 'medium',
-//     compactMode: false,
-//     ...props.initialSettings.appearance
-//   },
-//   user: {
-//     name: '',
-//     email: '',
-//     role: '',
-//     ...props.initialSettings.user
-//   },
-//   label: {
-//     facilityName: '',
-//     facilityAddress: '',
-//     defaultSize: 'medium',
-//     autoPrint: false,
-//     ...props.initialSettings.label
-//   },
-//   notifications: {
-//     enabled: true,
-//     sound: true,
-//     email: false,
-//     ...props.initialSettings.notifications
-//   },
-//   privacy: {
-//     twoFactor: false,
-//     sessionTimeout: '30',
-//     ...props.initialSettings.privacy
-//   }
-// })
-
 const applyTheme = (theme) => {
+  settings.theme = theme
+
   if (theme === 'dark') {
     document.documentElement.classList.add('dark')
   } else if (theme === 'light') {
     document.documentElement.classList.remove('dark')
   } else if (theme === 'system') {
-    // Check system preference
     if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
       document.documentElement.classList.add('dark')
     } else {
@@ -708,21 +698,14 @@ const applyTheme = (theme) => {
   }
 }
 
-watch(
-  () => settings.theme,
-  (newTheme) => {
-    applyTheme(newTheme)
-  }
-)
-
-const saveSettings = () => {
+const saveSettings = async () => {
   // Apply theme before saving
   applyTheme(settings.theme)
 
-  // Save to electron store
-  window.api.saveSettings(settings)
+  await window.api.saveSettings(toRaw(settings))
 
-  emit('save', settings)
+  // Emit settings to parent component
+  emit('save', { ...settings })
   closeModal()
 }
 
@@ -730,59 +713,51 @@ const closeModal = () => {
   emit('close')
 }
 
-// const saveSettings = () => {
-//   emit('save', settings)
-//   closeModal()
-// }
+onMounted(async () => {
+  // Fetch current user
+  currentUser.value = await window.api.getMe()
 
-// const watchThemeChange = (theme) => {
-//   emit('theme-change', theme)
-//   console.log(theme)
-//   settings.appearance.theme = theme
-// }
+  // Fetch settings from database
+  const dbSettings = await window.api.getSettings()
+
+  // Merge DB settings into reactive settings object
+  if (dbSettings) {
+    Object.assign(settings, dbSettings)
+    Object.assign(settingsOriginal, dbSettings)
+  }
+
+  // Apply current theme on mount
+  if (settings.theme) {
+    applyTheme(settings.theme)
+  }
+})
 </script>
 
 <style scoped>
+.custom-scrollbar::-webkit-scrollbar {
+  width: 6px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: #cbd5e0;
+  border-radius: 3px;
+}
+
+.dark .custom-scrollbar::-webkit-scrollbar-thumb {
+  background: #4a5568;
+}
+
 .modal-enter-active,
 .modal-leave-active {
-  transition: opacity 0.2s ease;
+  transition: opacity 0.3s ease;
 }
 
 .modal-enter-from,
 .modal-leave-to {
   opacity: 0;
 }
-
-.modal-enter-active > div,
-.modal-leave-active > div {
-  transition:
-    transform 0.2s ease,
-    opacity 0.2s ease;
-}
-
-.modal-enter-from > div,
-.modal-leave-to > div {
-  transform: scale(0.95);
-  opacity: 0;
-}
-
-/* .custom-scrollbar::-webkit-scrollbar {
-  width: 6px;
-} */
-
-/* .custom-scrollbar::-webkit-scrollbar-track {
-  background: rgb(16, 24, 40);
-  border-radius: 10px;
-} */
-
-/* .custom-scrollbar::-webkit-scrollbar-thumb {
-  background: rgb(30, 41, 57);
-  border-radius: 6px;
-}
-
-.custom-scrollbar::-webkit-scrollbar-thumb:hover {
-  background: rgba(30, 41, 57, 0.6);
-} */
-
-/* custom scrollbar in light mode */
 </style>
