@@ -17,7 +17,9 @@
         class="absolute right-2 top-1/2 -translate-y-1/2 w-2.5 h-2.5 rounded-full bg-yellow-500 dark:bg-yellow-400 cursor-help group"
         title="Edited"
       >
-        <span class="absolute left-1/2 -translate-x-1/2 bottom-full mb-2 px-2 py-1 text-xs font-semibold rounded bg-gray-900 text-white dark:bg-gray-100 dark:text-gray-900 whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
+        <span
+          class="absolute left-1/2 -translate-x-1/2 bottom-full mb-2 px-2 py-1 text-xs font-semibold rounded bg-gray-900 text-white dark:bg-gray-100 dark:text-gray-900 whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none"
+        >
           Edited
         </span>
       </span>
@@ -49,9 +51,9 @@
           <input
             :value="currentUser"
             type="text"
-            class="border border-gray-300/60 dark:border-gray-500 w-20 h-6 ps-1 focus:outline focus:outline-blue-500/50 block rounded-xs"
+            class="border uppercase border-gray-300/60 dark:border-gray-500 w-20 h-6 ps-1 focus:outline focus:outline-blue-500/50 block rounded-xs"
             readonly
-            disabled="true"
+            :disabled="true"
           />
         </div>
       </div>
@@ -83,11 +85,13 @@
   </div>
 </template>
 
-<script setup>
-import { watch } from 'vue'
+<!-- <script setup>
+import { watch, ref } from 'vue'
 import Button from './Button.vue'
 
 const label = defineModel({ type: Object, required: true })
+
+const client = ref('')
 
 defineProps({
   currentDate: { type: String, required: true },
@@ -128,6 +132,58 @@ watch(
 )
 
 // Configure action buttons declaratively
+const actions = [
+  { label: 'Remove', event: 'remove', color: 'red' },
+  { label: 'Update', event: 'update', color: 'yellow' },
+  { label: 'Add To Queue', event: 'queue', color: 'green' },
+  { label: 'Print', event: 'print', color: 'blue' }
+]
+</script> -->
+
+<script setup>
+import { watch } from 'vue'
+import Button from './Button.vue'
+
+const label = defineModel({ type: Object, required: true })
+
+const props = defineProps({
+  currentDate: { type: String, required: true },
+  currentUser: { type: String, required: true },
+  clientName: { type: String, required: false },
+  clientEditable: { type: Boolean, required: false, default: () => true },
+  showEditStatus: { type: Boolean, required: false, default: () => true }
+})
+
+defineEmits(['remove', 'update', 'queue', 'print'])
+
+const trackedKeys = ['product', 'instructions', 'warning']
+
+watch(
+  () => props.clientName,
+  (newVal) => {
+    label.value.client = newVal
+  },
+  { immediate: true }
+)
+
+// Mark dirty when edited
+watch(
+  () => ({
+    product: label.value?.product,
+    instructions: label.value?.instructions,
+    warning: label.value?.warning
+  }),
+  (newVal, oldVal) => {
+    if (!newVal || !oldVal) return
+    for (const key of trackedKeys) {
+      if (newVal[key] !== oldVal[key]) {
+        label.value._dirty = true
+        break
+      }
+    }
+  }
+)
+
 const actions = [
   { label: 'Remove', event: 'remove', color: 'red' },
   { label: 'Update', event: 'update', color: 'yellow' },

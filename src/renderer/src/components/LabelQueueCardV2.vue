@@ -37,7 +37,9 @@
           <input
             :value="currentUser"
             type="text"
-            class="border border-gray-300/60 dark:border-gray-500/60 w-20 h-6 ps-1 focus:outline focus:outline-blue-500/50 block rounded-xs"
+            class="border uppercase border-gray-300/60 dark:border-gray-500/60 w-20 h-6 ps-1 focus:outline focus:outline-blue-500/50 block rounded-xs"
+            readonly
+            :disabled="true"
           />
         </div>
       </div>

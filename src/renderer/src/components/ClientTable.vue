@@ -1,11 +1,4 @@
 <template>
-  <ConfirmModal
-    :show="modalState.show"
-    :message="modalState.message"
-    @confirm="onConfirm"
-    @cancel="onCancel"
-  />
-
   <div class="flex flex-col h-[calc(100vh-6rem)] bg-gray-50 dark:bg-gray-900">
     <!-- Sticky Search Header -->
     <div
@@ -27,7 +20,15 @@
               />
             </svg>
           </div>
+          <div class="absolute inset-y-0 end-10 flex items-center pointer-events-none">
+            <kbd
+              class="text-[10px] font-sans px-1.5 py-0.5 rounded border-2 border-gray-400/50 text-gray-400"
+            >
+              Ctrl + K
+            </kbd>
+          </div>
           <input
+            ref="searchInput"
             v-model="searchQuery"
             type="text"
             placeholder="Search by ID, Name, Contact, or Email..."
@@ -36,7 +37,7 @@
           />
           <div v-if="searchQuery" class="absolute inset-y-0 right-0 pr-3 flex items-center">
             <button
-              class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+              class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 select-none"
               @click="searchQuery = ''"
             >
               <svg
@@ -73,7 +74,7 @@
               >Bulk Actions:</span
             >
             <button
-              class="px-4 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-lg transition-all duration-200 flex items-center gap-2 shadow-sm hover:shadow-md"
+              class="px-4 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-lg transition-all duration-200 flex items-center gap-2 shadow-sm hover:shadow-md select-none"
               @click="bulkSendToQueue"
             >
               <svg
@@ -89,7 +90,7 @@
               Queue ({{ selected.length }})
             </button>
             <button
-              class="px-4 py-2 text-sm font-medium text-white bg-green-600 hover:bg-green-700 rounded-lg transition-all duration-200 flex items-center gap-2 shadow-sm hover:shadow-md"
+              class="px-4 py-2 text-sm font-medium text-white bg-green-600 hover:bg-green-700 rounded-lg transition-all duration-200 flex items-center gap-2 shadow-sm hover:shadow-md select-none"
               @click="bulkPrintLabels"
             >
               <svg
@@ -107,7 +108,7 @@
               Print ({{ selected.length }})
             </button>
             <button
-              class="px-4 py-2 text-sm font-medium text-white bg-red-600 hover:bg-red-700 rounded-lg transition-all duration-200 flex items-center gap-2 shadow-sm hover:shadow-md"
+              class="px-4 py-2 text-sm font-medium text-white bg-red-600 hover:bg-red-700 rounded-lg transition-all duration-200 flex items-center gap-2 shadow-sm hover:shadow-md select-none"
               @click="bulkDeleteClients"
             >
               <svg
@@ -125,18 +126,34 @@
               Delete ({{ selected.length }})
             </button>
           </div>
+          <button
+            class="flex items-center font-medium gap-1.5 h-7 px-3 py-1.5 bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 rounded-lg transition-colors text-sm whitespace-nowrap"
+            @click="showClientModal = true"
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              class="w-3.5 h-3.5"
+              fill="currentColor"
+              viewBox="0 0 16 16"
+            >
+              <path
+                d="M8 4a.5.5 0 0 1 .5.5v3h3a.5.5 0 0 1 0 1h-3v3a.5.5 0 0 1-1 0v-3h-3a.5.5 0 0 1 0-1h3v-3A.5.5 0 0 1 8 4"
+              />
+            </svg>
+            Add Client
+          </button>
         </div>
       </div>
     </div>
 
     <!-- Scrollable Table Container -->
-    <div class="flex-1 overflow-auto px-6 py-4">
+    <div class="flex-1 overflow-auto px-6 py-4 custom-scrollbar">
       <div class="max-w-7xl mx-auto">
         <div
           class="bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 overflow-hidden"
         >
           <div
-            class="overflow-x-auto overflow-y-auto"
+            class="overflow-x-auto overflow-y-auto custom-scrollbar"
             style="max-height: calc(100vh - 280px)"
             @scroll="closeMenu"
           >
@@ -220,7 +237,7 @@
                   <td class="px-6 py-4 whitespace-nowrap text-right text-sm">
                     <div class="flex justify-end gap-2">
                       <button
-                        class="p-2 rounded-lg bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 hover:bg-blue-200 dark:hover:bg-blue-900/50 transition-all duration-200 hover:scale-110"
+                        class="p-2 rounded-lg bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 hover:bg-blue-200 dark:hover:bg-blue-900/50 transition-all duration-200 hover:scale-110 select-none"
                         title="Edit"
                         @click="handleEdit(item.id)"
                       >
@@ -242,7 +259,7 @@
                         </svg>
                       </button>
                       <button
-                        class="p-2 rounded-lg bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 hover:bg-red-200 dark:hover:bg-red-900/50 transition-all duration-200 hover:scale-110"
+                        class="p-2 rounded-lg bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 hover:bg-red-200 dark:hover:bg-red-900/50 transition-all duration-200 hover:scale-110 select-none"
                         title="Delete"
                         @click="deleteClientConfirmed(item.id)"
                       >
@@ -264,7 +281,7 @@
                       >
                         <template #trigger>
                           <button
-                            class="p-2 rounded-lg bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 transition-all duration-200 text-gray-700 dark:text-gray-300"
+                            class="p-2 rounded-lg bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 transition-all duration-200 text-gray-700 dark:text-gray-300 select-none"
                             :class="{ 'bg-gray-200 dark:bg-gray-600': openMenuId === item.id }"
                             title="More actions"
                           >
@@ -360,7 +377,7 @@
 
         <div class="flex items-center gap-2">
           <button
-            class="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200"
+            class="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 select-none"
             :disabled="currentPage === 1"
             @click="currentPage = Math.max(1, currentPage - 1)"
           >
@@ -391,7 +408,7 @@
 
           <button
             :disabled="currentPage === totalPages"
-            class="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200"
+            class="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 select-none"
             @click="currentPage = Math.min(totalPages, currentPage + 1)"
           >
             <span class="flex items-center gap-1">
@@ -414,18 +431,26 @@
       </div>
     </div>
   </div>
+  <AddNewClient
+    :open="showClientModal"
+    @close="showClientModal = false"
+    @confirm="handleClientAdded"
+  />
 </template>
 
 <script setup>
-import { ref, computed, readonly, defineExpose, reactive } from 'vue'
+import { ref, computed, readonly, defineExpose, onMounted, onUnmounted } from 'vue'
 import MoreMenu from './MoreMenu.vue'
 import { useRouter } from 'vue-router'
 import { useAlerts } from '../composables/useAlerts.js'
-import ConfirmModal from './ConfirmModal.vue'
+import { useConfirm } from '../composables/useConfirm.js'
+import AddNewClient from '../pages/AddNewClient.vue'
 
 defineEmits(['refresh'])
 
+const showClientModal = ref(false)
 const alerts = useAlerts()
+const { confirm } = useConfirm()
 const clients = ref([])
 const router = useRouter()
 const selected = ref([])
@@ -434,30 +459,34 @@ const itemsPerPage = ref(10)
 const sortConfig = ref({ key: null, direction: 'asc' })
 const searchQuery = ref('')
 const openMenuId = ref(null)
+const searchInput = ref(null)
 
-// modal confirm helper
-const modalState = reactive({
-  show: false,
-  message: '',
-  resolve: null
-})
+const handleKeyDown = (event) => {
+  const isModKey = event.ctrlKey || event.metaKey
 
-const confirm = (message) => {
-  return new Promise((resolve) => {
-    modalState.message = message
-    modalState.resolve = resolve
-    modalState.show = true
-  })
-}
+  // Ctrl + K -> Focus Search
+  if (isModKey && event.key.toLowerCase() === 'k') {
+    event.preventDefault()
+    searchInput.value?.focus()
+  }
 
-const onConfirm = () => {
-  modalState.resolve(true)
-  modalState.show = false
-}
+  // // Ctrl + N -> Focus Client
+  // if (isModKey && event.key.toLowerCase() === 'n') {
+  //   event.preventDefault()
+  //   clientInput.value?.focus()
+  // }
 
-const onCancel = () => {
-  modalState.resolve(false)
-  modalState.show = false
+  // // Ctrl + J -> Go to Queue
+  // if (isModKey && event.key.toLowerCase() === 'j') {
+  //   event.preventDefault()
+  //   goToQueue()
+  // }
+
+  // // Ctrl + , -> Open Settings
+  // if (isModKey && event.key === ',') {
+  //   event.preventDefault()
+  //   showSettings.value = true
+  // }
 }
 
 const handleSort = (key) => {
@@ -600,6 +629,11 @@ const toggleMenu = (id) => {
   openMenuId.value = openMenuId.value === id ? null : id
 }
 
+const handleClientAdded = async () => {
+  showClientModal.value = false
+  await loadClients()
+}
+
 // Close menu when clicking outside or scrolling
 const closeMenu = () => {
   openMenuId.value = null
@@ -694,4 +728,41 @@ const bulkDeleteClients = async () => {
     selected.value = []
   }
 }
+onMounted(async () => {
+  await loadClients()
+  // window.addEventListener('click', closeMenu)
+  window.addEventListener('keydown', handleKeyDown)
+})
+onUnmounted(() => {
+  // window.removeEventListener('click', closeMenu)
+  window.removeEventListener('keydown', handleKeyDown)
+})
 </script>
+<style scoped>
+.custom-scrollbar::-webkit-scrollbar {
+  width: 6px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: #cbd5e0;
+  border-radius: 3px;
+}
+
+.dark .custom-scrollbar::-webkit-scrollbar-thumb {
+  background: #4a5568;
+}
+
+.modal-enter-active,
+.modal-leave-active {
+  transition: opacity 0.3s ease;
+}
+
+.modal-enter-from,
+.modal-leave-to {
+  opacity: 0;
+}
+</style>

@@ -41,46 +41,12 @@
           >
             Print Queue
           </button>
-          <MoreMenu :actions="moreActions">
-            <template #trigger>
-              <button
-                class="p-2 rounded-lg bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 transition-colors text-gray-700 dark:text-gray-300 dark:hover:bg-gray-600"
-              >
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  class="bi bi-three-dots-vertical w-4 h-4"
-                  fill="currentColor"
-                  viewBox="0 0 16 16"
-                >
-                  <path
-                    d="M9.5 13a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0m0-5a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0m0-5a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0"
-                  />
-                </svg>
-              </button>
-            </template>
-          </MoreMenu>
-
-          <!-- <button
-            class="p-2 rounded-lg bg-gray-200/60 dark:bg-gray-700 hover:bg-gray-300 transition-colors text-gray-700 dark:text-gray-300 dark:hover:bg-gray-600"
-            @click="refreshLabels"
-          >
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              class="bi bi-three-dots-vertical w-4 h-4"
-              fill="currentColor"
-              viewBox="0 0 16 16"
-            >
-              <path
-                d="M9.5 13a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0m0-5a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0m0-5a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0"
-              />
-            </svg>
-          </button> -->
-
+          <GlobalMoreMenu :includes="['Clients', 'Settings', 'Logout']" />
           <button
             class="text-sm font-medium text-gray-50 bg-black dark:bg-gray-100 dark:hover:bg-gray-100/70 dark:text-gray-900 py-1 px-2 rounded-lg"
             @click="goToLabel"
           >
-            Go back
+            View Labels
           </button>
         </template>
       </Header>
@@ -91,7 +57,7 @@
           v-for="label in labels"
           :key="label.id"
           v-model="labelModels[label.id]"
-          :current-date="curDate"
+          :current-date="formattedDate"
           :current-user="currentUser"
           @remove="() => removeFromQueue(label.id)"
           @update="() => saveLabel(label.id)"
@@ -100,58 +66,27 @@
       </div>
     </div>
   </div>
-
-  <ConfirmModal
-    :show="confirmState.show"
-    :message="confirmState.message"
-    @confirm="onConfirm"
-    @cancel="onCancel"
-  />
 </template>
 
 <script setup>
 import { ref, onMounted, reactive } from 'vue'
 import { useRouter } from 'vue-router'
 import LabelQueueCardV2 from '../components/LabelQueueCardV2.vue'
-import ConfirmModal from '../components/ConfirmModal.vue'
 import { useAlerts } from '../composables/useAlerts.js'
 import Header from '../components/Header.vue'
-import MoreMenu from '../components/MoreMenu.vue'
-import { soothingPrinterSound } from '../utils/utils.js'
+import GlobalMoreMenu from '../components/GlobalMoreMenu.vue'
+import { useSettings } from '../composables/useSettings.js'
+import { useConfirm } from '../composables/useConfirm.js'
 
 const router = useRouter()
+const { formattedDate, playSoundIfEnabled } = useSettings()
 const labels = ref([])
 const labelModels = reactive({})
-const settings = ref({ facility_name: '', facility_address: '', dateFormat: 'd1' })
 const queueCount = ref(0)
-const curDate = ref(new Date().toUTCString())
 const alerts = useAlerts()
 const isRefreshing = ref(false)
 const currentUser = ref('')
-
-const confirmState = reactive({
-  show: false,
-  message: '',
-  resolve: null
-})
-
-function confirm(message) {
-  return new Promise((resolve) => {
-    confirmState.message = message
-    confirmState.resolve = resolve
-    confirmState.show = true
-  })
-}
-
-const onConfirm = () => {
-  confirmState.resolve(true)
-  confirmState.show = false
-}
-
-const onCancel = () => {
-  confirmState.resolve(false)
-  confirmState.show = false
-}
+const { confirm } = useConfirm()
 
 const confirmClearQueue = async () => {
   if (await confirm('Clear the entire queue?')) {
@@ -162,7 +97,7 @@ const confirmClearQueue = async () => {
 
 const printQueue = async () => {
   if (await confirm('Print all labels in the queue?')) {
-    soothingPrinterSound()
+    playSoundIfEnabled()
 
     const jobList = JSON.parse(JSON.stringify(Object.values(labelModels)))
 
@@ -170,11 +105,6 @@ const printQueue = async () => {
 
     alerts.success('Print jobs sent for all labels in the queue.')
   }
-}
-
-const fetchSettings = async () => {
-  const data = await window.api.getSettings()
-  if (data) Object.assign(settings.value, data)
 }
 
 const loadQueueLabels = async () => {
@@ -213,7 +143,7 @@ const clearQueue = async () => {
 }
 
 const printLabel = async (id) => {
-  soothingPrinterSound()
+  playSoundIfEnabled()
   await window.api.printerPrint({ ...labelModels[id] })
   alerts.error('Print functionality not implemented.')
 }
@@ -237,26 +167,10 @@ const refreshLabels = async () => {
 function goToLabel() {
   router.push({ name: 'MedicationLabel' })
 }
-const handeLogout = async () => {
-  await window.api.logoutUser()
-  router.replace({ name: 'LoginPage' })
-}
-
-const moreActions = [
-  {
-    label: 'Clients',
-    handler: () => router.push({ name: 'Clients' })
-  },
-  {
-    label: 'Logout',
-    handler: async () => await handeLogout()
-  }
-]
 
 onMounted(async () => {
   const user = await window.api.getMe()
   currentUser.value = user?.name || ''
-  fetchSettings()
   refresh()
 })
 

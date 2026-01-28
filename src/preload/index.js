@@ -40,6 +40,7 @@ const api = {
   deleteClient: (id) => ipcRenderer.invoke('clients:delete', id),
   createClientLabel: (client_id, product, instructions, warning) =>
     ipcRenderer.invoke('clients:add-label', client_id, product, instructions, warning),
+  createClientLabels: (data) => ipcRenderer.invoke('clients:add-labels', data),
   updateClientLabel: (id, product, instructions, warning) =>
     ipcRenderer.invoke('client-label:update', id, product, instructions, warning),
   deleteClientLabels: (id, labels) => ipcRenderer.invoke('clients:delete-labels', id, labels),

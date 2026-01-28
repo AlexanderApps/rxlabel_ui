@@ -56,11 +56,21 @@ const handleAction = (fn) => {
       <button
         v-for="(a, i) in actions"
         :key="i"
-        class="flex w-full px-3 py-2 text-sm text-left hover:bg-gray-100 dark:hover:bg-gray-700 gap-2 items-center"
+        class="flex relative w-full px-3 py-2 text-sm text-left hover:bg-gray-100 dark:hover:bg-gray-700 gap-2 items-center"
         @click="handleAction(a.handler)"
       >
         <span v-if="a.icon" class="w-4 h-4" v-html="a.icon"></span>
         {{ a.label }}
+        <div
+          v-if="a.shortcut"
+          class="absolute inset-y-0 end-2 flex items-center pointer-events-none"
+        >
+          <kbd
+            class="text-[10px] font-sans px-1.5 py-0.5 rounded border-2 border-gray-400/50 text-gray-400"
+          >
+            {{ a.shortcut }}
+          </kbd>
+        </div>
       </button>
     </div>
   </div>

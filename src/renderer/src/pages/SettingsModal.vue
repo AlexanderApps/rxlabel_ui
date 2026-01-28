@@ -15,7 +15,7 @@
           >
             <h2 class="text-xl font-semibold text-gray-900 dark:text-white">Settings</h2>
             <button
-              class="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors text-gray-500 dark:text-gray-400"
+              class="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors text-gray-500 dark:text-gray-400 select-none"
               @click="closeModal"
             >
               <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -40,7 +40,7 @@
                   v-for="tab in tabs"
                   :key="tab.id"
                   :class="[
-                    'w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors text-left',
+                    'w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors text-left  select-none',
                     activeTab === tab.id
                       ? 'bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400'
                       : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800'
@@ -158,7 +158,7 @@
                         v-for="theme in ['light', 'dark', 'system']"
                         :key="theme"
                         :class="[
-                          'flex flex-1 px-4 py-3 gap-4 item-center rounded-lg border-2 transition-all capitalize',
+                          'flex flex-1 px-4 py-3 gap-4 item-center rounded-lg border-2 transition-all capitalize select-none',
                           settings.theme === theme
                             ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400'
                             : 'border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600'
@@ -282,10 +282,12 @@
                       Facility Name
                     </label>
                     <input
+                      v-model="settings.facility_name"
                       type="text"
                       class="w-full px-3 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg outline-0 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                       placeholder="Enter facility name"
-                      v-model="settings.facility_name"
+                      readonly
+                      :disabled="true"
                     />
                   </div>
 
@@ -294,10 +296,12 @@
                       Facility Contact
                     </label>
                     <input
+                      v-model="settings.facility_contact"
                       type="text"
                       class="w-full px-3 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg outline-0 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                       placeholder="Enter facility phone number"
-                      v-model="settings.facility_contact"
+                      readonly
+                      :disabled="true"
                     />
                   </div>
 
@@ -306,10 +310,12 @@
                       Facility Address
                     </label>
                     <textarea
+                      v-model="settings.facility_address"
                       rows="3"
                       class="w-full px-3 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg outline-0 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                       placeholder="Enter facility address"
-                      v-model="settings.facility_address"
+                      readonly
+                      :disabled="true"
                     />
                   </div>
 
@@ -359,7 +365,7 @@
                     </div>
                     <button
                       :class="[
-                        'relative inline-flex h-6 w-11 items-center rounded-full transition-colors',
+                        'relative inline-flex h-6 w-11 items-center rounded-full transition-colors select-none',
                         settings.alert_sound ? 'bg-blue-600' : 'bg-gray-200 dark:bg-gray-700'
                       ]"
                       @click="settings.alert_sound = settings.alert_sound ? 0 : 1"
@@ -394,7 +400,7 @@
                   Help & Support
                 </h3>
 
-                <div class="space-y-6">
+                <div class="h-90 space-y-6 overflow-auto pr-4 pl-1 pb-12 custom-scrollbar">
                   <div
                     class="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4"
                   >
@@ -540,7 +546,7 @@
                       contact support.
                     </p>
                     <button
-                      class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors"
+                      class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors select-none"
                     >
                       Contact Support
                     </button>
@@ -555,13 +561,13 @@
             class="absolute bottom-0 left-0 right-0 flex items-center justify-end gap-3 px-6 py-4 border-t border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-900/50"
           >
             <button
-              class="px-4 py-2 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg font-medium transition-colors"
+              class="px-4 py-2 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg font-medium transition-colors select-none"
               @click="closeModal"
             >
               Cancel
             </button>
             <button
-              class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors"
+              class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors select-none"
               @click="saveSettings"
             >
               Save Changes
@@ -574,9 +580,18 @@
 </template>
 
 <script setup>
-import { ref, reactive, computed, onMounted, toRaw } from 'vue'
+import { ref, reactive, onMounted, toRaw } from 'vue'
+import { useSettings } from '../composables/useSettings'
 
 const currentUser = ref(null)
+
+const {
+  settings,
+  dateTimeOptions,
+  // saveSettings: saveToDb,
+  // applyTheme,
+  loadSettings
+} = useSettings()
 
 defineProps({
   show: {
@@ -602,85 +617,9 @@ const tabs = [
   { id: 'help', label: 'Help', icon: 'help' }
 ]
 
-// Initialize settings with default structure matching DB schema
-const settings = reactive({
-  id: null,
-  facility_name: '',
-  facility_address: '',
-  facility_contact: '',
-  queue_size: 100,
-  date_format: 'dt3',
-  alert_sound: 1,
-  theme: 'system',
-  font_size: 'medium',
-  created_at: null
-})
-
 const settingsOriginal = reactive({})
 
 // Generate date/time format options
-const now = new Date()
-
-const dateTimeOptions = computed(() => [
-  // DATE ONLY FORMATS
-  { id: 'd1', label: 'Short (US)', value: new Intl.DateTimeFormat('en-US').format(now) },
-  {
-    id: 'd2',
-    label: 'Extended',
-    value: new Intl.DateTimeFormat('en-US', { dateStyle: 'long' }).format(now)
-  },
-  {
-    id: 'd3',
-    label: 'Abbreviated',
-    value: new Intl.DateTimeFormat('en-US', {
-      month: 'short',
-      day: '2-digit',
-      year: 'numeric'
-    }).format(now)
-  },
-  { id: 'd4', label: 'Technical', value: now.toLocaleDateString('en-CA') },
-  {
-    id: 'd5',
-    label: 'Day & Month',
-    value: new Intl.DateTimeFormat('en-US', {
-      weekday: 'short',
-      month: 'short',
-      day: 'numeric'
-    }).format(now)
-  },
-
-  // DATE + TIME FORMATS
-  {
-    id: 'dt1',
-    label: 'Standard',
-    value: new Intl.DateTimeFormat('en-US', { dateStyle: 'short', timeStyle: 'short' }).format(now)
-  },
-  {
-    id: 'dt2',
-    label: 'Detailed',
-    value: new Intl.DateTimeFormat('en-US', { dateStyle: 'medium', timeStyle: 'short' }).format(now)
-  },
-  {
-    id: 'dt3',
-    label: '24-Hour',
-    value: new Intl.DateTimeFormat('en-GB', {
-      dateStyle: 'short',
-      timeStyle: 'short',
-      hour12: false
-    }).format(now)
-  },
-  {
-    id: 'dt4',
-    label: 'Compact',
-    value: now.toLocaleString('en-US', {
-      month: 'numeric',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
-    })
-  },
-  { id: 'dt5', label: 'ISO Style', value: now.toISOString().replace('T', ' ').substring(0, 16) }
-])
 
 const applyTheme = (theme) => {
   settings.theme = theme
@@ -700,12 +639,12 @@ const applyTheme = (theme) => {
 
 const saveSettings = async () => {
   // Apply theme before saving
-  applyTheme(settings.theme)
+  // applyTheme(settings.theme)
 
-  await window.api.saveSettings(toRaw(settings))
+  await window.api.saveSettings(toRaw({ ...settings.value }))
 
   // Emit settings to parent component
-  emit('save', { ...settings })
+  // emit('save', {})
   closeModal()
 }
 
@@ -719,6 +658,8 @@ onMounted(async () => {
 
   // Fetch settings from database
   const dbSettings = await window.api.getSettings()
+
+  await loadSettings()
 
   // Merge DB settings into reactive settings object
   if (dbSettings) {

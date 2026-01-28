@@ -11,7 +11,7 @@
         :badge-mode="queueCount <= 0 ? 'danger' : 'info'"
       >
         <template #actions>
-          <button class="btn-icon" @click="goToSettings">
+          <button class="btn-icon" @click="openSettings">
             <svg
               xmlns="http://www.w3.org/2000/svg"
               class="bi bi-gear w-4 h-4"
@@ -46,24 +46,7 @@
             </svg>
           </button>
 
-          <MoreMenu :actions="moreActions">
-            <template #trigger>
-              <button
-                class="p-2 rounded-lg bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 transition-colors text-gray-700 dark:text-gray-300 dark:hover:bg-gray-600"
-              >
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  class="bi bi-three-dots-vertical w-4 h-4"
-                  fill="currentColor"
-                  viewBox="0 0 16 16"
-                >
-                  <path
-                    d="M9.5 13a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0m0-5a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0m0-5a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0"
-                  />
-                </svg>
-              </button>
-            </template>
-          </MoreMenu>
+          <GlobalMoreMenu :includes="['Clients', 'Logout']" />
 
           <button class="btn-queue" @click="goToQueue">View Queue</button>
         </template>
@@ -95,8 +78,16 @@
                   />
                 </svg>
               </div>
+              <div class="absolute inset-y-0 end-2 flex items-center pointer-events-none">
+                <kbd
+                  class="text-[10px] font-sans px-1.5 py-0.5 rounded border-2 border-gray-400/50 text-gray-400"
+                >
+                  Ctrl + K
+                </kbd>
+              </div>
               <input
                 id="search"
+                ref="searchInput"
                 v-model="search"
                 type="text"
                 class="h-7 px-3 py-1.5 bg-gray-300/50 dark:bg-gray-800 border border-gray-300/50 dark:border-gray-700/60 rounded-md ps-8 text-sm focus:outline focus:outline-gray-500/50 block w-full placeholder:text-body"
@@ -107,8 +98,16 @@
           <div class="flex items-center">
             <label for="client" class="sr-only">Client Name</label>
             <div class="relative w-full">
+              <div class="absolute inset-y-0 end-2 flex items-center pointer-events-none">
+                <kbd
+                  class="text-[10px] font-sans px-1.5 py-0.5 rounded border border-gray-400/50 text-gray-400"
+                >
+                  Ctrl + O
+                </kbd>
+              </div>
               <input
                 id="client"
+                ref="clientInput"
                 v-model="client"
                 type="text"
                 class="h-7 px-3 py-1.5 border rounded-md ps-3 bg-gray-300/50 dark:bg-gray-800 border-gray-300/50 dark:border-gray-700/60 text-sm focus:outline focus:outline-gray-500/50 block w-full placeholder:text-body"
@@ -118,7 +117,7 @@
           </div>
         </div>
         <button
-          class="flex items-center gap-1.5 h-7 px-3 py-1.5 bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 rounded-lg transition-colors text-sm whitespace-nowrap"
+          class="flex items-center font-medium gap-1.5 h-7 px-3 py-1.5 bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 rounded-lg transition-colors text-sm whitespace-nowrap"
           @click="addNewLabel"
         >
           <svg
@@ -153,34 +152,23 @@
       </div>
     </div>
   </div>
-  <ConfirmModal
-    :show="modalState.show"
-    :message="modalState.message"
-    @confirm="onConfirm"
-    @cancel="onCancel"
-  />
-  <SettingsModal
-    :show="showSettings"
-    :initial-settings="settings"
-    @close="showSettings = false"
-    @save="handleSaveSettings"
-  />
 </template>
 
 <script setup>
-import { ref, onMounted, watch, reactive, computed } from 'vue'
+import { ref, onMounted, watch, reactive, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAlerts } from '../composables/useAlerts.js'
-import { getFormattedDateTime, soothingPrinterSound } from '../utils/utils.js'
-import SettingsModal from './SettingsModal.vue'
-import ConfirmModal from '../components/ConfirmModal.vue'
+import { useSettings, showSettings } from '../composables/useSettings.js'
+import { useConfirm } from '../composables/useConfirm.js'
 import LabelCardV2 from '../components/LabelCardV2.vue'
-import MoreMenu from '../components/MoreMenu.vue'
 import Header from '../components/Header.vue'
 import AddLabelModal from './AddLabelModal.vue'
+import GlobalMoreMenu from '../components/GlobalMoreMenu.vue'
 
 const router = useRouter()
 const alerts = useAlerts()
+const { confirm } = useConfirm()
+const { formattedDate, playSoundIfEnabled } = useSettings()
 
 // ----- State -----
 const labels = ref([])
@@ -189,32 +177,45 @@ const search = ref('')
 const client = ref('')
 const queueCount = ref(0)
 const currentUser = ref('')
+const searchInput = ref(null)
+const clientInput = ref(null)
 
-const showSettings = ref(false)
+const handleKeyDown = (event) => {
+  const isModKey = event.ctrlKey || event.metaKey
+
+  // Ctrl + K -> Focus Search
+  if (isModKey && event.key.toLowerCase() === 'k') {
+    event.preventDefault()
+    searchInput.value?.focus()
+  }
+
+  // Ctrl + O -> Focus Client
+  if (isModKey && event.key.toLowerCase() === 'o') {
+    event.preventDefault()
+    clientInput.value?.focus()
+  }
+
+  // Ctrl + J -> Go to Queue
+  if (isModKey && event.key.toLowerCase() === 'j') {
+    event.preventDefault()
+    goToQueue()
+  }
+
+  // Ctrl + N -> New Label
+  if (isModKey && event.key.toLowerCase() === 'n') {
+    event.preventDefault()
+    addNewLabel()
+  }
+  // Ctrl + , -> Open Settings
+  if (isModKey && event.key === ',') {
+    event.preventDefault()
+    showSettings.value = true
+  }
+}
+
 const isRefreshing = ref(false)
 const isOpeningSettings = ref(false)
 
-// IMPORTANT: make this reactive, not ref
-const settings = reactive({
-  facility_name: '',
-  facility_address: '',
-  facility_phone: '',
-  queue_size: 0,
-  theme: 'system',
-  date_format: '',
-  alert_sound: ''
-})
-
-// modal confirm helper
-const modalState = reactive({
-  show: false,
-  message: '',
-  resolve: null
-})
-
-const formattedDate = computed(() => {
-  return getFormattedDateTime(settings.date_format || 'dt5')
-})
 const showModal = ref(false)
 
 const handleSave = async (labels_list) => {
@@ -227,36 +228,6 @@ const handleSave = async (labels_list) => {
   showModal.value = false
   refresh()
   alerts.success('Successfully added item(s) to labels')
-}
-
-// ----- Helpers -----
-const confirm = (message) => {
-  return new Promise((resolve) => {
-    modalState.message = message
-    modalState.resolve = resolve
-    modalState.show = true
-  })
-}
-
-const onConfirm = () => {
-  modalState.resolve(true)
-  modalState.show = false
-}
-
-const onCancel = () => {
-  modalState.resolve(false)
-  modalState.show = false
-}
-
-// ----- I/O -----
-const fetchSettings = async () => {
-  const data = await window.api.getSettings()
-  if (data) {
-    // Instead of Object.assign(settings.value, data)
-    for (const k in data) {
-      settings[k] = data[k]
-    }
-  }
 }
 
 const fetchQueueCount = async () => {
@@ -313,9 +284,7 @@ const addToQueue = async (id) => {
 }
 
 const printLabel = async (id) => {
-  if (settings.alert_sound) {
-    soothingPrinterSound()
-  }
+  playSoundIfEnabled()
   await window.api.printerPrint({ ...labelModels[id] })
 
   alerts.error('Print functionality not implemented.')
@@ -325,7 +294,7 @@ const goToQueue = () => {
   router.push({ name: 'MedicationLabelQueue' })
 }
 
-const goToSettings = () => {
+const openSettings = () => {
   if (isOpeningSettings.value) return
   isOpeningSettings.value = true
 
@@ -335,36 +304,20 @@ const goToSettings = () => {
   }, 200)
 }
 
-const handleSaveSettings = async () => {
-  await fetchSettings()
-}
-
-const handeLogout = async () => {
-  await window.api.logoutUser()
-  router.replace({ name: 'LoginPage' })
-}
-
 const addNewLabel = () => {
   showModal.value = true
 }
 
-const moreActions = [
-  {
-    label: 'Clients',
-    handler: () => router.push({ name: 'Clients' })
-  },
-  {
-    label: 'Logout',
-    handler: async () => await handeLogout()
-  }
-]
-
 // ----- Lifecycle -----
 onMounted(async () => {
+  window.addEventListener('keydown', handleKeyDown)
   const user = await window.api.getMe()
   currentUser.value = user?.name || ''
-  await fetchSettings()
   await refresh()
+})
+
+onUnmounted(() => {
+  window.removeEventListener('keydown', handleKeyDown)
 })
 
 // ----- Watch -----

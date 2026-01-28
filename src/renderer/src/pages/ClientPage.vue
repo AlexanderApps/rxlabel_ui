@@ -37,13 +37,13 @@
             </button>
             <button
               v-show="clientCount > 0"
-              class="text-sm font-medium py-1 px-2 rounded-lg bg-gray-200/60 dark:bg-gray-700 hover:bg-gray-300 transition-colors text-gray-700 dark:text-gray-300 dark:hover:bg-gray-600"
+              class="text-sm font-medium py-1 px-2 rounded-lg bg-gray-200/60 dark:bg-gray-700 hover:bg-gray-300 transition-colors text-gray-700 dark:text-gray-300 dark:hover:bg-gray-600 select-none"
               @click="confirmClearQueue"
             >
               Print Queue
             </button>
             <button
-              class="text-sm font-medium py-1 px-2 rounded-lg bg-gray-200/60 dark:bg-gray-700 hover:bg-gray-300 transition-colors text-gray-700 dark:text-gray-300 dark:hover:bg-gray-600"
+              class="text-sm font-medium py-1 px-2 rounded-lg bg-gray-200/60 dark:bg-gray-700 hover:bg-gray-300 transition-colors text-gray-700 dark:text-gray-300 dark:hover:bg-gray-600 select-none"
               @click="printQueue"
             >
               Add Client
@@ -51,7 +51,7 @@
             <MoreMenu :actions="moreActions">
               <template #trigger>
                 <button
-                  class="p-2 rounded-lg bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 transition-colors text-gray-700 dark:text-gray-300 dark:hover:bg-gray-600"
+                  class="p-2 rounded-lg bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 transition-colors text-gray-700 dark:text-gray-300 dark:hover:bg-gray-600 select-none"
                 >
                   <svg
                     xmlns="http://www.w3.org/2000/svg"
@@ -68,7 +68,7 @@
             </MoreMenu>
 
             <button
-              class="text-sm font-medium text-gray-50 bg-black dark:bg-gray-100 dark:hover:bg-gray-100/70 dark:text-gray-900 py-1 px-2 rounded-lg"
+              class="text-sm font-medium text-gray-50 bg-black dark:bg-gray-100 dark:hover:bg-gray-100/70 dark:text-gray-900 py-1 px-2 rounded-lg select-none"
               @click="goBack"
             >
               Go Back
@@ -85,20 +85,20 @@
               <h2 class="text-xl font-bold">{{ client.name }}</h2>
               <button
                 v-if="!isEditing"
-                class="px-4 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors"
+                class="px-4 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors select-none"
                 @click="isEditing = true"
               >
                 Edit Client
               </button>
               <div v-else class="flex gap-2">
                 <button
-                  class="px-4 py-2 text-sm font-medium text-white bg-green-600 hover:bg-green-700 rounded-lg transition-colors"
+                  class="px-4 py-2 text-sm font-medium text-white bg-green-600 hover:bg-green-700 rounded-lg transition-colors select-none"
                   @click="saveClient"
                 >
                   Save
                 </button>
                 <button
-                  class="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 rounded-lg transition-colors"
+                  class="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 rounded-lg transition-colors select-none"
                   @click="cancelEdit"
                 >
                   Cancel
@@ -194,7 +194,7 @@
               <!-- Actions -->
               <div class="flex justify-end gap-2 flex-wrap">
                 <button
-                  class="px-3 py-1.5 text-sm font-medium rounded-lg bg-green-600 text-white hover:bg-green-700 flex items-center gap-1 transition"
+                  class="px-3 py-1.5 text-sm font-medium rounded-lg bg-green-600 text-white hover:bg-green-700 flex items-center gap-1 transition select-none"
                   @click="showModal = true"
                 >
                   <svg
@@ -212,7 +212,7 @@
 
                 <button
                   v-if="hasUnsavedChanges"
-                  class="px-3 py-1.5 text-sm font-medium rounded-lg bg-blue-600 text-white hover:bg-blue-700 transition"
+                  class="px-3 py-1.5 text-sm font-medium rounded-lg bg-blue-600 text-white hover:bg-blue-700 transition select-none"
                   @click="saveLabelsConfirmed"
                 >
                   Save
@@ -220,19 +220,19 @@
 
                 <template v-if="selectedLabels.length > 0">
                   <button
-                    class="px-3 py-1.5 text-sm font-medium rounded-lg bg-blue-600 text-white hover:bg-blue-700 transition"
+                    class="px-3 py-1.5 text-sm font-medium rounded-lg bg-blue-600 text-white hover:bg-blue-700 transition select-none"
                     @click="bulkPrint"
                   >
                     Print ({{ selectedLabels.length }})
                   </button>
                   <button
-                    class="px-3 py-1.5 text-sm font-medium rounded-lg bg-purple-600 text-white hover:bg-purple-700 transition"
+                    class="px-3 py-1.5 text-sm font-medium rounded-lg bg-purple-600 text-white hover:bg-purple-700 transition select-none"
                     @click="bulkQueue"
                   >
                     Queue
                   </button>
                   <button
-                    class="px-3 py-1.5 text-sm font-medium rounded-lg bg-red-600 text-white hover:bg-red-700 transition"
+                    class="px-3 py-1.5 text-sm font-medium rounded-lg bg-red-600 text-white hover:bg-red-700 transition select-none"
                     @click="bulkDelete"
                   >
                     Delete
@@ -296,8 +296,9 @@
                     v-model="labelModels[label.id]"
                     :client-editable="false"
                     :show-edit-status="false"
-                    :current-date="currentDate"
+                    :current-date="formattedDate"
                     :current-user="currentUser"
+                    :client-name="clientName"
                     @remove="() => removeLabel(label.id)"
                     @update="(updated) => updateLabel(label.id, updated)"
                     @queue="() => queueLabel(label.id)"
@@ -323,16 +324,19 @@
 </template>
 
 <script setup>
-import { ref, reactive, computed, onMounted, onUnmounted, toRaw, watch } from 'vue'
+import { ref, reactive, computed, onMounted, onUnmounted, toRaw } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useAlerts } from '../composables/useAlerts.js'
-import { soothingPrinterSound } from '../utils/utils.js'
+import { useSettings } from '../composables/useSettings.js'
+// import { soothingPrinterSound } from '../utils/utils.js'
 
 import Header from '../components/Header.vue'
 import MoreMenu from '../components/MoreMenu.vue'
 import LabelCardV2 from '../components/LabelCardV2.vue'
 import AddClientLabels from './AddClientLabels.vue'
 import ConfirmModal from '../components/ConfirmModal.vue'
+
+const { formattedDate, playSoundIfEnabled } = useSettings()
 
 // Client data
 const client = ref({})
@@ -350,8 +354,9 @@ const newUnsavedLabels = ref([])
 const labelModels = ref({})
 const selectedLabels = ref([])
 const searchProduct = ref('')
-const currentDate = ref(new Date().toLocaleString())
 const deletedLabelIds = ref([])
+
+const clientName = computed(() => client.value?.name || 'Client')
 
 // UI and modal
 const showModal = ref(false)
@@ -741,7 +746,7 @@ const printLabel = async (id) => {
   }
 
   try {
-    soothingPrinterSound()
+    playSoundIfEnabled()
     await window.api.printerPrint([
       {
         ...toRaw(label),
@@ -760,7 +765,7 @@ const printQueue = async () => {
   if (!confirm('Print all labels in the queue?')) return
 
   try {
-    soothingPrinterSound()
+    playSoundIfEnabled()
     const jobList = Object.values(labelModels.value).map((label) => ({
       ...toRaw(label),
       client: client.value ? JSON.parse(JSON.stringify(toRaw(client.value))) : null,
@@ -807,7 +812,7 @@ const bulkPrint = async () => {
       user: currentUser.value
     }))
 
-    soothingPrinterSound()
+    playSoundIfEnabled()
     await window.api.printerPrint(jobList)
     alerts.success(`Sent ${jobList.length} label(s) to the printer`)
 

@@ -27,7 +27,7 @@
               />
             </svg>
           </button>
-          <button
+          <!-- <button
             v-show="clientCount > 0"
             class="text-sm font-medium py-1 px-2 rounded-lg bg-gray-200/60 dark:bg-gray-700 hover:bg-gray-300 transition-colors text-gray-700 dark:text-gray-300 dark:hover:bg-gray-600"
             @click="confirmClearQueue"
@@ -39,25 +39,8 @@
             @click="printQueue"
           >
             Add Client
-          </button>
-          <MoreMenu :actions="moreActions">
-            <template #trigger>
-              <button
-                class="p-2 rounded-lg bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 transition-colors text-gray-700 dark:text-gray-300 dark:hover:bg-gray-600"
-              >
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  class="bi bi-three-dots-vertical w-4 h-4"
-                  fill="currentColor"
-                  viewBox="0 0 16 16"
-                >
-                  <path
-                    d="M9.5 13a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0m0-5a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0m0-5a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0"
-                  />
-                </svg>
-              </button>
-            </template>
-          </MoreMenu>
+          </button> -->
+          <GlobalMoreMenu :includes="['View Labels', 'Settings', 'Logout']" />
 
           <button
             class="text-sm font-medium text-gray-50 bg-black dark:bg-gray-100 dark:hover:bg-gray-100/70 dark:text-gray-900 py-1 px-2 rounded-lg"
@@ -74,65 +57,29 @@
       </div>
     </div>
   </div>
-
-  <ConfirmModal
-    :show="confirmState.show"
-    :message="confirmState.message"
-    @confirm="onConfirm"
-    @cancel="onCancel"
-  />
 </template>
 <script setup>
-import { ref, onMounted, reactive } from 'vue'
+import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-import ConfirmModal from '../components/ConfirmModal.vue'
 import { useAlerts } from '../composables/useAlerts.js'
 import Header from '../components/Header.vue'
-import MoreMenu from '../components/MoreMenu.vue'
+import GlobalMoreMenu from '../components/GlobalMoreMenu.vue'
 import ClientTable from '../components/ClientTable.vue'
+// import { useConfirm } from '../composables/useConfirm.js'
 
+// const { confirm } = useConfirm()
 const router = useRouter()
-// const labels = ref([])
-// const clients = ref([])
-// const labelModels = reactive({})
-// const client = ref('')
-const settings = ref({ facility_name: '', facility_address: '', dateFormat: 'd1' })
 const clientCount = ref(0)
-// const curDate = ref(new Date().toUTCString())
 const alerts = useAlerts()
 const isRefreshing = ref(false)
 const clientsRef = ref(null)
 
-const confirmState = reactive({
-  show: false,
-  message: '',
-  resolve: null
-})
-
-function confirm(message) {
-  return new Promise((resolve) => {
-    confirmState.message = message
-    confirmState.resolve = resolve
-    confirmState.show = true
-  })
-}
-
-const onConfirm = () => {
-  confirmState.resolve(true)
-  confirmState.show = false
-}
-
-const onCancel = () => {
-  confirmState.resolve(false)
-  confirmState.show = false
-}
-
-const confirmClearQueue = async () => {
-  if (await confirm('Clear the entire queue?')) {
-    await clearQueue()
-    setTimeout(() => alerts.success('Queue cleared.'), 500)
-  }
-}
+// const confirmClearQueue = async () => {
+//   if (await confirm('Clear the entire queue?')) {
+//     await clearQueue()
+//     setTimeout(() => alerts.success('Queue cleared.'), 500)
+//   }
+// }
 
 // const printQueue = async () => {
 //   if (await confirm('Print all labels in the queue?')) {
@@ -145,10 +92,10 @@ const confirmClearQueue = async () => {
 //   }
 // }
 
-const fetchSettings = async () => {
-  const data = await window.api.getSettings()
-  if (data) Object.assign(settings.value, data)
-}
+// const fetchSettings = async () => {
+//   const data = await window.api.getSettings()
+//   if (data) Object.assign(settings.value, data)
+// }
 
 const fetchclientCount = async () => {
   clientCount.value = await window.api.countClients()
@@ -168,10 +115,10 @@ const fetchclientCount = async () => {
 //   await loadClients()
 // }
 
-const clearQueue = async () => {
-  await window.api.clearQueue()
-  await fetchclientCount()
-}
+// const clearQueue = async () => {
+//   await window.api.clearQueue()
+//   await fetchclientCount()
+// }
 
 const refresh = async () => {
   clientsRef.value.refresh()
@@ -194,24 +141,7 @@ function goToQueue() {
   router.push({ name: 'MedicationLabelQueue' })
 }
 
-const handeLogout = async () => {
-  await window.api.logoutUser()
-  router.replace({ name: 'LoginPage' })
-}
-
-const moreActions = [
-  {
-    label: 'Clients',
-    handler: () => router.push({ name: 'Clients' })
-  },
-  {
-    label: 'Logout',
-    handler: async () => await handeLogout()
-  }
-]
-
 onMounted(() => {
-  fetchSettings()
   refresh()
 })
 </script>
