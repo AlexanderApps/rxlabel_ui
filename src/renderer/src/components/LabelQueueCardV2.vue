@@ -53,7 +53,8 @@
       <div class="h-11 border-y border-y-gray-300/60 dark:border-y-gray-700/60">
         <textarea
           v-model="label.warning"
-          class="w-full h-full text-wrap no-scrollbar px-2 text-sm resize-none focus:outline focus:outline-blue-500/50"
+          placeholder="⚠️"
+          class="w-full h-full text-wrap no-scrollbar px-2 text-sm resize-none dark:text-amber-500 text-amber-600 focus:outline focus:outline-blue-500/50"
         />
       </div>
     </div>

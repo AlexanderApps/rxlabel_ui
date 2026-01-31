@@ -23,7 +23,7 @@ import MoreMenu from './MoreMenu.vue'
 import { useRouter } from 'vue-router'
 import { useConfirm } from '../composables/useConfirm.js'
 import { useAlerts } from '../composables/useAlerts.js'
-import { showSettings } from '../composables/useSettings.js'
+import { showSettings, useSettings } from '../composables/useSettings.js'
 import { computed } from 'vue'
 
 const props = defineProps({
@@ -36,6 +36,7 @@ const props = defineProps({
 const router = useRouter()
 const alerts = useAlerts()
 const { confirm } = useConfirm()
+const { currentUser } = useSettings()
 
 const handeLogout = async () => {
   await window.api.logoutUser()
@@ -53,6 +54,12 @@ const confirmClearQueue = async () => {
   }
 }
 
+const confirmLogout = async () => {
+  if (await confirm('Are you sure you want to logout?')) {
+    await handeLogout()
+  }
+}
+
 const actions = computed(() => {
   const baseActions = [
     {
@@ -62,22 +69,27 @@ const actions = computed(() => {
     },
     {
       label: 'View Queue',
-      shortcut: 'Ctrl + H',
-      handler: () => router.push({ name: 'Clients' })
+      shortcut: 'Ctrl + J',
+      handler: () => router.push({ name: 'MedicationLabelQueue' })
     },
     {
       label: 'Clients',
-      shortcut: 'Ctrl + M',
+      shortcut: 'Ctrl + D',
       handler: () => router.push({ name: 'Clients' })
     },
     {
+      label: 'Users',
+      shortcut: 'Ctrl + G',
+      handler: () => router.push({ name: 'Users' })
+    },
+    {
       label: 'Print Queue',
-      shortcut: 'Ctrl + I',
+      shortcut: 'Ctrl + y',
       handler: () => console.log('first')
     },
     {
       label: 'Clear Queue',
-      shortcut: 'Ctrl + L',
+      shortcut: 'Ctrl + y',
       handler: async () => await confirmClearQueue()
     },
     {
@@ -86,10 +98,26 @@ const actions = computed(() => {
       handler: () => (showSettings.value = true)
     },
     {
+      label: 'Admin',
+      shortcut: 'Ctrl + A',
+      handler: () => router.push({ name: 'Admin' })
+    },
+    {
       label: 'Logout',
-      handler: async () => await handeLogout()
+      shortcut: 'Ctrl + L',
+      handler: async () => await confirmLogout()
     }
   ]
-  return baseActions.filter((action) => props.includes.includes(action.label))
+  const exludedRoutesByRole = {
+    user: ['Users', 'Admin'],
+    admin: [],
+    manager: ['Admin']
+  }
+  return baseActions.filter((action) => {
+    if (exludedRoutesByRole[currentUser.value?.role || 'user']?.includes(action.label)) {
+      return false
+    }
+    return props.includes.includes(action.label)
+  })
 })
 </script>

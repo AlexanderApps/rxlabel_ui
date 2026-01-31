@@ -3,10 +3,14 @@
     <Transition name="modal">
       <div
         v-if="show"
+        role="dialog"
+        aria-modal="true"
         class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm dark:text-white"
         @click.self="closeModal"
       >
         <div
+          ref="modalRef"
+          tabindex="-1"
           class="relative w-full max-w-4xl h-150 bg-white dark:bg-gray-900 rounded-lg shadow-2xl overflow-hidden"
         >
           <!-- Header -->
@@ -15,6 +19,7 @@
           >
             <h2 class="text-xl font-semibold text-gray-900 dark:text-white">Settings</h2>
             <button
+              ref="closeBtn"
               class="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors text-gray-500 dark:text-gray-400 select-none"
               @click="closeModal"
             >
@@ -137,6 +142,22 @@
                       d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
                     />
                   </svg>
+                  <!-- Shortcut Icon -->
+                  <svg
+                    v-if="tab.icon === 'shortcuts'"
+                    class="w-5 h-5"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <rect x="3" y="3" width="18" height="18" rx="2" stroke-width="2" />
+                    <path
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      stroke-width="2"
+                      d="M8 8h8M8 12h8M8 16h5"
+                    />
+                  </svg>
                   {{ tab.label }}
                 </button>
               </nav>
@@ -239,6 +260,7 @@
                       placeholder="Enter your name"
                       :value="currentUser?.name || ''"
                       readonly
+                      :disabled="true"
                     />
                   </div>
 
@@ -252,6 +274,7 @@
                       placeholder="your@email.com"
                       :value="currentUser?.email || ''"
                       readonly
+                      :disabled="true"
                     />
                   </div>
 
@@ -261,10 +284,24 @@
                     </label>
                     <input
                       type="text"
-                      class="w-full px-3 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg outline-0 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                      placeholder="e.g., Pharmacist"
+                      class="w-full capitalize px-3 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg outline-0 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      placeholder="e.g., User"
                       :value="currentUser?.role || ''"
                       readonly
+                      :disabled="true"
+                    />
+                  </div>
+                  <div v-if="currentUser?.position">
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                      Position
+                    </label>
+                    <input
+                      type="text"
+                      class="w-full capitalize px-3 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg outline-0 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      placeholder="e.g., Pharmacist"
+                      :value="currentUser?.position || ''"
+                      readonly
+                      :disabled="true"
                     />
                   </div>
                 </div>
@@ -343,6 +380,33 @@
                       placeholder="Enter queue size"
                       v-model.number="settings.queue_size"
                     />
+                  </div>
+
+                  <div class="space-y-6">
+                    <div class="flex items-center justify-between">
+                      <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                          Clear Queue on Label Print
+                        </label>
+                        <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                          Clear label from queue when the label is printed
+                        </p>
+                      </div>
+                      <button
+                        :class="[
+                          'relative inline-flex h-6 w-11 items-center rounded-full transition-colors select-none',
+                          settings.alert_sound ? 'bg-blue-600' : 'bg-gray-200 dark:bg-gray-700'
+                        ]"
+                        @click="settings.alert_sound = settings.alert_sound ? 0 : 1"
+                      >
+                        <span
+                          :class="[
+                            'inline-block h-4 w-4 transform rounded-full bg-white transition-transform',
+                            settings.alert_sound ? 'translate-x-6' : 'translate-x-1'
+                          ]"
+                        />
+                      </button>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -480,8 +544,8 @@
                           </svg>
                         </summary>
                         <p class="mt-3 text-sm text-gray-600 dark:text-gray-400">
-                          Navigate to the "Label Settings" tab and update your facility name,
-                          address, and contact information. Click "Save Changes" to apply.
+                          Facility information is tied to your license and cannot be changed
+                          directly. Please contact support for assistance.
                         </p>
                       </details>
 
@@ -553,6 +617,24 @@
                   </div>
                 </div>
               </div>
+
+              <!-- Shortcuts Tab -->
+              <div v-if="activeTab === 'shortcuts'">
+                <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">Shortcuts</h3>
+
+                <div class="h-90 space-y-6 overflow-auto pr-4 pl-1 pb-12 custom-scrollbar">
+                  <ShortcutSection title="Global Shortcuts" :shortcuts="globalShortcuts" />
+
+                  <ShortcutSection title="Medication Label Page" :shortcuts="labelPageShortcuts" />
+
+                  <ShortcutSection
+                    title="Medication Label Queue Page"
+                    :shortcuts="queuePageShortcuts"
+                  />
+                  <ShortcutSection title="Clients Page" :shortcuts="clientPageShortcuts" />
+                  <ShortcutSection title="Users Page" :shortcuts="userPageShortcuts" />
+                </div>
+              </div>
             </div>
           </div>
 
@@ -579,19 +661,18 @@
   </Teleport>
 </template>
 
-<script setup>
-import { ref, reactive, onMounted, toRaw } from 'vue'
+<!-- <script setup>
+import { ref, onMounted, toRaw } from 'vue'
 import { useSettings } from '../composables/useSettings'
-
-const currentUser = ref(null)
 
 const {
   settings,
   dateTimeOptions,
+  currentUser,
   // saveSettings: saveToDb,
   // applyTheme,
-  loadSettings
-} = useSettings()
+  refreshSettingsAndUser
+} = useSettings(true)
 
 defineProps({
   show: {
@@ -617,7 +698,7 @@ const tabs = [
   { id: 'help', label: 'Help', icon: 'help' }
 ]
 
-const settingsOriginal = reactive({})
+// const settingsOriginal = reactive({})
 
 // Generate date/time format options
 
@@ -640,8 +721,10 @@ const applyTheme = (theme) => {
 const saveSettings = async () => {
   // Apply theme before saving
   // applyTheme(settings.theme)
+  console.log({ ...settings.value })
 
   await window.api.saveSettings(toRaw({ ...settings.value }))
+  // console.log(toRaw({ ...settings.value }))
 
   // Emit settings to parent component
   // emit('save', {})
@@ -654,23 +737,175 @@ const closeModal = () => {
 
 onMounted(async () => {
   // Fetch current user
-  currentUser.value = await window.api.getMe()
-
   // Fetch settings from database
-  const dbSettings = await window.api.getSettings()
+  // const dbSettings = await window.api.getSettings()
 
-  await loadSettings()
+  await refreshSettingsAndUser()
 
   // Merge DB settings into reactive settings object
-  if (dbSettings) {
-    Object.assign(settings, dbSettings)
-    Object.assign(settingsOriginal, dbSettings)
-  }
+  // if (dbSettings) {
+  //   Object.assign(settings, dbSettings)
+  //   Object.assign(settingsOriginal, dbSettings)
+  // }
 
   // Apply current theme on mount
   if (settings.theme) {
     applyTheme(settings.theme)
   }
+})
+</script> -->
+
+<script setup>
+import { ref, watch, nextTick, onUnmounted, toRaw, onMounted } from 'vue'
+import { useSettings } from '../composables/useSettings'
+import ShortcutSection from '../components/ShortcutSection.vue'
+
+const { settings, dateTimeOptions, currentUser, refreshSettingsAndUser } = useSettings(true)
+
+/* ---------------- props / emits ---------------- */
+
+const props = defineProps({
+  show: { type: Boolean, default: false },
+  initialSettings: { type: Object, default: () => ({}) }
+})
+
+const emit = defineEmits(['close', 'save'])
+
+/* ---------------- focus refs ---------------- */
+
+const modalRef = ref(null)
+const closeBtn = ref(null)
+let lastFocused = null
+
+/* ---------------- state ---------------- */
+
+const activeTab = ref('appearance')
+
+const tabs = [
+  { id: 'appearance', label: 'Appearance', icon: 'palette' },
+  { id: 'user', label: 'User Profile', icon: 'user' },
+  { id: 'label', label: 'Label Settings', icon: 'tag' },
+  { id: 'notifications', label: 'Notifications', icon: 'bell' },
+  { id: 'privacy', label: 'Privacy', icon: 'shield' },
+  { id: 'shortcuts', label: 'Shortcuts', icon: 'shortcuts' },
+  { id: 'help', label: 'Help', icon: 'help' }
+]
+
+/* ---------------- theme ---------------- */
+
+const applyTheme = (theme) => {
+  settings.theme = theme
+
+  if (theme === 'dark') {
+    document.documentElement.classList.add('dark')
+  } else if (theme === 'light') {
+    document.documentElement.classList.remove('dark')
+  } else {
+    const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches
+    document.documentElement.classList.toggle('dark', prefersDark)
+  }
+}
+
+/* ---------------- focus trap ---------------- */
+
+function handleKeydown(e) {
+  if (!props.show || !modalRef.value) return
+
+  if (e.key === 'Escape') {
+    e.preventDefault()
+    closeModal()
+    return
+  }
+
+  if (e.key !== 'Tab') return
+
+  const focusables = modalRef.value.querySelectorAll(
+    'button:not([disabled]), input, textarea, select, a[href], [tabindex]:not([tabindex="-1"])'
+  )
+
+  if (!focusables.length) return
+
+  const first = focusables[0]
+  const last = focusables[focusables.length - 1]
+
+  if (e.shiftKey && document.activeElement === first) {
+    e.preventDefault()
+    last.focus()
+  } else if (!e.shiftKey && document.activeElement === last) {
+    e.preventDefault()
+    first.focus()
+  }
+}
+
+const globalShortcuts = [
+  { keys: ['Esc'], action: 'Close active modals' },
+  { keys: ['Ctrl', ','], action: 'Open settings' },
+  { keys: ['Ctrl', 'J'], action: 'Navigate to Queue page' },
+  { keys: ['Ctrl', 'D'], action: 'Navigate to Clients page' },
+  { keys: ['Ctrl', 'B'], action: 'Navigate to Labels page' },
+  { keys: ['Ctrl', 'G'], action: 'Navigate to Users page' },
+  { keys: ['Ctrl', 'Shift', 'A'], action: 'Open Admin Console' },
+  { keys: ['Ctrl', 'L'], action: 'Logout' }
+]
+
+const labelPageShortcuts = [
+  { keys: ['Ctrl', 'K'], action: 'Focus label search input' },
+  { keys: ['Ctrl', 'O'], action: 'Focus client name input' },
+  { keys: ['Ctrl', 'N'], action: 'Add new label(s)' }
+]
+
+const queuePageShortcuts = [
+  { keys: ['Ctrl', 'P'], action: 'Print entire queue' },
+  { keys: ['Ctrl', 'I'], action: 'Clear queue' }
+]
+
+const clientPageShortcuts = [
+  { keys: ['Ctrl', 'K'], action: 'Focus client details search field' },
+  { keys: ['Ctrl', 'N'], action: 'Add new client' }
+]
+
+const userPageShortcuts = [
+  { keys: ['Ctrl', 'K'], action: 'Focus user details search field' },
+  { keys: ['Ctrl', 'N'], action: 'Add new user' }
+]
+
+/* ---------------- lifecycle ---------------- */
+
+watch(
+  () => props.show,
+  async (open) => {
+    if (open) {
+      lastFocused = document.activeElement
+      await nextTick()
+      closeBtn.value?.focus()
+      window.addEventListener('keydown', handleKeydown)
+    } else {
+      window.removeEventListener('keydown', handleKeydown)
+      lastFocused?.focus()
+    }
+  }
+)
+
+onUnmounted(() => {
+  window.removeEventListener('keydown', handleKeydown)
+})
+
+/* ---------------- actions ---------------- */
+
+const saveSettings = async () => {
+  await window.api.saveSettings(toRaw({ ...settings.value }))
+  closeModal()
+}
+
+const closeModal = () => {
+  emit('close')
+}
+
+/* ---------------- mount ---------------- */
+
+onMounted(async () => {
+  await refreshSettingsAndUser()
+  if (settings.theme) applyTheme(settings.theme)
 })
 </script>
 

@@ -2,10 +2,14 @@
   <Transition name="modal">
     <div
       v-if="show"
+      role="dialog"
+      aria-modal="true"
       class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm pointer-events-auto"
       @click.self="closeModal"
     >
       <div
+        ref="modalRef"
+        tabindex="-1"
         class="bg-white dark:bg-gray-800 rounded-xl shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-hidden flex flex-col"
       >
         <!-- Header -->
@@ -19,6 +23,7 @@
             </p>
           </div>
           <button
+            ref="closeBtn"
             class="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
             @click="closeModal"
           >
@@ -158,6 +163,7 @@
               Cancel
             </button>
             <button
+              ref="saveBtn"
               class="px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 disabled:bg-gray-300 dark:disabled:bg-gray-600 disabled:cursor-not-allowed text-white transition-colors"
               :disabled="!isValid"
               @click="saveLabels"
@@ -171,7 +177,7 @@
   </Transition>
 </template>
 
-<script setup>
+<!-- <script setup>
 import { ref, computed } from 'vue'
 
 defineProps({
@@ -230,6 +236,135 @@ const closeModal = () => {
 }
 
 const resetForm = () => {
+  labels.value = [
+    {
+      id: nextId++,
+      product: '',
+      instructions: '',
+      warning: ''
+    }
+  ]
+}
+</script> -->
+<script setup>
+import { ref, computed, watch, nextTick, onUnmounted } from 'vue'
+
+/* ---------------- props / emits ---------------- */
+
+const props = defineProps({
+  show: {
+    type: Boolean,
+    default: false
+  }
+})
+
+const emit = defineEmits(['close', 'save'])
+
+/* ---------------- focus trap ---------------- */
+
+const modalRef = ref(null)
+const closeBtn = ref(null)
+const saveBtn = ref(null)
+
+let lastFocused = null
+
+function handleKeydown(e) {
+  if (!props.show || !modalRef.value) return
+
+  if (e.key === 'Escape') {
+    e.preventDefault()
+    closeModal()
+    return
+  }
+
+  if (e.key === 'Tab') {
+    const focusables = modalRef.value.querySelectorAll(
+      'button:not([disabled]), input, textarea, select, [tabindex]:not([tabindex="-1"])'
+    )
+
+    if (!focusables.length) return
+
+    const first = focusables[0]
+    const last = focusables[focusables.length - 1]
+
+    if (e.shiftKey && document.activeElement === first) {
+      e.preventDefault()
+      last.focus()
+    } else if (!e.shiftKey && document.activeElement === last) {
+      e.preventDefault()
+      first.focus()
+    }
+  }
+}
+
+watch(
+  () => props.show,
+  async (open) => {
+    if (open) {
+      lastFocused = document.activeElement
+      await nextTick()
+      closeBtn.value?.focus()
+      window.addEventListener('keydown', handleKeydown)
+    } else {
+      window.removeEventListener('keydown', handleKeydown)
+      lastFocused?.focus()
+    }
+  }
+)
+
+onUnmounted(() => {
+  window.removeEventListener('keydown', handleKeydown)
+})
+
+/* ---------------- labels state ---------------- */
+
+let nextId = 1
+
+const labels = ref([
+  {
+    id: nextId++,
+    product: '',
+    instructions: '',
+    warning: ''
+  }
+])
+
+const isValid = computed(() => labels.value.every((l) => l.product.trim() !== ''))
+
+/* ---------------- actions ---------------- */
+
+function addLabel() {
+  labels.value.push({
+    id: nextId++,
+    product: '',
+    instructions: '',
+    warning: ''
+  })
+}
+
+function removeLabel(id) {
+  labels.value = labels.value.filter((l) => l.id !== id)
+}
+
+function saveLabels() {
+  if (!isValid.value) return
+
+  const payload = labels.value.map(({ product, instructions, warning }) => ({
+    product: product.trim(),
+    instructions: instructions.trim(),
+    warning: warning.trim()
+  }))
+
+  emit('save', payload)
+  resetForm()
+}
+
+function closeModal() {
+  emit('close')
+  resetForm()
+}
+
+function resetForm() {
   labels.value = [
     {
       id: nextId++,

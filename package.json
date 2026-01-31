@@ -23,10 +23,12 @@
     "@electron-toolkit/utils": "^4.0.0",
     "@node-rs/argon2": "^2.0.2",
     "@tailwindcss/vite": "^4.1.18",
-    "better-sqlite3": "^12.5.0",
+    "base32-decode": "^1.0.0",
+    "better-sqlite3-multiple-ciphers": "^12.6.2",
+    "electron-store": "^8.1.0",
     "electron-updater": "^6.3.9",
     "python-shell": "^5.0.0",
-    "vue-router": "^4.6.4"
+    "vue-router": "^5.0.1"
   },
   "devDependencies": {
     "@electron-toolkit/eslint-config": "^2.1.0",
@@ -38,6 +40,7 @@
     "daisyui": "^5.5.14",
     "electron": "^39.2.6",
     "electron-builder": "^26.0.12",
+    "electron-rebuild": "^3.2.9",
     "electron-vite": "^5.0.0",
     "eslint": "^9.39.1",
     "eslint-plugin-vue": "^10.6.2",

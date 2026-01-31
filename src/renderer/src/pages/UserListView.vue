@@ -2,8 +2,8 @@
   <div class="w-full h-full dark:bg-gray-900 dark:text-white">
     <div class="grid grid-rows-[3.5rem_1fr] h-full">
       <Header
-        title="Clients"
-        :badge-label="`Clients: ${clientCount}`"
+        title="Users"
+        :badge-label="`Users: ${clientCount}`"
         :badge-mode="clientCount <= 0 ? 'danger' : 'info'"
       >
         <template #actions>
@@ -40,7 +40,7 @@
           >
             Add Client
           </button> -->
-          <GlobalMoreMenu :includes="['View Labels', 'Users', 'Settings', 'Logout']" />
+          <GlobalMoreMenu :includes="['View Labels', 'Settings', 'Logout']" />
 
           <button
             class="text-sm font-medium text-gray-50 bg-black dark:bg-gray-100 dark:hover:bg-gray-100/70 dark:text-gray-900 py-1 px-2 rounded-lg"
@@ -53,86 +53,44 @@
       <div
         class="label-container w-full h-[calc(100vh-3.5rem)] overflow-auto p-5 justify-center dark:bg-gray-900 dark:text-white items-center"
       >
-        <ClientTable ref="clientsRef" />
+        <UserTable ref="usersRef" />
       </div>
     </div>
   </div>
 </template>
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAlerts } from '../composables/useAlerts.js'
 import Header from '../components/Header.vue'
 import GlobalMoreMenu from '../components/GlobalMoreMenu.vue'
-import ClientTable from '../components/ClientTable.vue'
+import UserTable from '../components/UserTable.vue'
 // import { useConfirm } from '../composables/useConfirm.js'
 
 // const { confirm } = useConfirm()
 const router = useRouter()
-const clientCount = ref(0)
+const userCount = ref(0)
 const alerts = useAlerts()
 const isRefreshing = ref(false)
-const clientsRef = ref(null)
+const usersRef = ref(null)
 
-// const confirmClearQueue = async () => {
-//   if (await confirm('Clear the entire queue?')) {
-//     await clearQueue()
-//     setTimeout(() => alerts.success('Queue cleared.'), 500)
-//   }
-// }
-
-// const printQueue = async () => {
-//   if (await confirm('Print all labels in the queue?')) {
-//     for (const label of labels.value) {
-//       console.log({ ...labelModels[label.id], client: client.value })
-//     }
-//     setTimeout(() => {
-//       alerts.success('Print jobs sent for all labels in the queue.')
-//     }, 500)
-//   }
-// }
-
-// const fetchSettings = async () => {
-//   const data = await window.api.getSettings()
-//   if (data) Object.assign(settings.value, data)
-// }
-
-const fetchclientCount = async () => {
-  clientCount.value = await window.api.countClients()
+const fetchUserCount = async () => {
+  // userCount.value = await window.api.countClients()
 }
-
-// const removeFromQueue = async (id) => {
-//   await window.api.removeFromQueue(id)
-//   await loadClients()
-//   await fetchclientCount()
-//   setTimeout(() => {
-//     alerts.success('Successfully removed label from queue.')
-//   }, 500)
-// }
-
-// const saveLabel = async (id) => {
-//   await window.api.updateLabel({ ...labelModels[id] })
-//   await loadClients()
-// }
-
-// const clearQueue = async () => {
-//   await window.api.clearQueue()
-//   await fetchclientCount()
-// }
 
 const refresh = async () => {
-  clientsRef.value.refresh()
-  await fetchclientCount()
+  usersRef.value.refresh()
+  await fetchUserCount()
 }
 
-const refreshClients = async () => {
+const refreshUsers = async () => {
   if (isRefreshing.value) return
   isRefreshing.value = true
   await refresh()
 
   setTimeout(() => {
     isRefreshing.value = false
-    alerts.info('Client list refreshed.')
+    alerts.info('User list refreshed.')
   }, 1000)
 }
 
@@ -141,7 +99,7 @@ function goToQueue() {
   router.push({ name: 'MedicationLabelQueue' })
 }
 
-onMounted(() => {
-  refresh()
-})
+// onMounted(() => {
+//   refresh()
+// })
 </script>

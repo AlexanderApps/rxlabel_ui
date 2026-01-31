@@ -11,8 +11,8 @@
       <div class="grid grid-rows-[auto_auto_1fr] h-full">
         <Header
           title="Client Details"
-          :badge-label="`Clients: ${clientCount}`"
-          :badge-mode="clientCount <= 0 ? 'danger' : 'info'"
+          :badge-label="`Queue: ${queueCount}`"
+          :badge-mode="queueCount <= 0 ? 'danger' : 'info'"
         >
           <template #actions>
             <button
@@ -35,20 +35,7 @@
                 />
               </svg>
             </button>
-            <button
-              v-show="clientCount > 0"
-              class="text-sm font-medium py-1 px-2 rounded-lg bg-gray-200/60 dark:bg-gray-700 hover:bg-gray-300 transition-colors text-gray-700 dark:text-gray-300 dark:hover:bg-gray-600 select-none"
-              @click="confirmClearQueue"
-            >
-              Print Queue
-            </button>
-            <button
-              class="text-sm font-medium py-1 px-2 rounded-lg bg-gray-200/60 dark:bg-gray-700 hover:bg-gray-300 transition-colors text-gray-700 dark:text-gray-300 dark:hover:bg-gray-600 select-none"
-              @click="printQueue"
-            >
-              Add Client
-            </button>
-            <MoreMenu :actions="moreActions">
+            <!-- <MoreMenu :actions="moreActions">
               <template #trigger>
                 <button
                   class="p-2 rounded-lg bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 transition-colors text-gray-700 dark:text-gray-300 dark:hover:bg-gray-600 select-none"
@@ -65,13 +52,13 @@
                   </svg>
                 </button>
               </template>
-            </MoreMenu>
-
+            </MoreMenu> -->
+            <GlobalMoreMenu :includes="['View Labels', 'Users', 'Settings', 'Logout']" />
             <button
               class="text-sm font-medium text-gray-50 bg-black dark:bg-gray-100 dark:hover:bg-gray-100/70 dark:text-gray-900 py-1 px-2 rounded-lg select-none"
               @click="goBack"
             >
-              Go Back
+              Go to Clients
             </button>
           </template>
         </Header>
@@ -107,7 +94,7 @@
             </div>
 
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-              <div>
+              <!-- <div>
                 <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                   Client ID
                 </label>
@@ -117,7 +104,7 @@
                   disabled
                   class="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-lg bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400 cursor-not-allowed"
                 />
-              </div>
+              </div> -->
 
               <div>
                 <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
@@ -157,6 +144,18 @@
                   :class="!isEditing ? 'bg-gray-50 dark:bg-gray-800/50' : ''"
                 />
               </div>
+              <div>
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  Home Address
+                </label>
+                <textarea
+                  v-model="client.home_address"
+                  type="text"
+                  :disabled="!isEditing"
+                  class="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-800"
+                  :class="!isEditing ? 'bg-gray-50 dark:bg-gray-800/50' : ''"
+                />
+              </div>
             </div>
           </div>
         </div>
@@ -168,7 +167,14 @@
           <div class="max-w-7xl mx-auto h-full flex flex-col gap-4">
             <!-- Header Row -->
             <div class="grid grid-cols-1 md:grid-cols-3 items-center gap-3">
-              <h2 class="text-xl font-semibold">Client Labels</h2>
+              <div class="flex gap-2">
+                <h2 class="text-xl font-semibold">Client Labels</h2>
+                <div class="w-14">
+                  <Badge :mode="Object.keys(labelModels).length === 0 ? 'danger' : 'info'">
+                    <span>Labels:&nbsp;</span>{{ Object.keys(labelModels).length }}
+                  </Badge>
+                </div>
+              </div>
 
               <!-- Search -->
               <div class="order-last md:order-0">
@@ -297,7 +303,7 @@
                     :client-editable="false"
                     :show-edit-status="false"
                     :current-date="formattedDate"
-                    :current-user="currentUser"
+                    :current-user="currentUser?.name || ''"
                     :client-name="clientName"
                     @remove="() => removeLabel(label.id)"
                     @update="(updated) => updateLabel(label.id, updated)"
@@ -328,21 +334,19 @@ import { ref, reactive, computed, onMounted, onUnmounted, toRaw } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useAlerts } from '../composables/useAlerts.js'
 import { useSettings } from '../composables/useSettings.js'
-// import { soothingPrinterSound } from '../utils/utils.js'
 
 import Header from '../components/Header.vue'
-import MoreMenu from '../components/MoreMenu.vue'
+import GlobalMoreMenu from '../components/GlobalMoreMenu.vue'
 import LabelCardV2 from '../components/LabelCardV2.vue'
 import AddClientLabels from './AddClientLabels.vue'
 import ConfirmModal from '../components/ConfirmModal.vue'
+import Badge from '../components/Badge.vue'
 
-const { formattedDate, playSoundIfEnabled } = useSettings()
+const { formattedDate, currentUser, playSoundIfEnabled } = useSettings()
 
 // Client data
 const client = ref({})
 const originalClient = ref({ ...client.value })
-const currentUser = ref('')
-const clientCount = ref(10)
 
 // Editing and refreshing
 const isEditing = ref(false)
@@ -355,6 +359,7 @@ const labelModels = ref({})
 const selectedLabels = ref([])
 const searchProduct = ref('')
 const deletedLabelIds = ref([])
+const queueCount = ref(0)
 
 const clientName = computed(() => client.value?.name || 'Client')
 
@@ -514,7 +519,13 @@ const getClient = async (id) => {
 const saveClient = async () => {
   const data = client.value
   try {
-    await window.api.updateClient(route.params.id, data.name, data.contact, data.email)
+    await window.api.updateClient(
+      route.params.id,
+      data.name,
+      data.contact,
+      data.email,
+      data.home_address
+    )
     originalClient.value = { ...client.value }
     isEditing.value = false
     alerts.success('Client updated successfully')
@@ -619,6 +630,10 @@ function updateLabel(labelId, updated) {
   // hasUnsavedChanges computed will detect the change by comparing with source
 
   alerts.info('Label updated (not saved)')
+}
+
+const fetchQueueCount = async () => {
+  queueCount.value = await window.api.countQueue()
 }
 
 async function saveLabels() {
@@ -751,7 +766,7 @@ const printLabel = async (id) => {
       {
         ...toRaw(label),
         client: client.value ? JSON.parse(JSON.stringify(toRaw(client.value))) : null,
-        user: currentUser.value
+        user: currentUser.value?.name || null
       }
     ])
     alerts.success('Label sent to printer')
@@ -759,29 +774,6 @@ const printLabel = async (id) => {
     console.error('Print error:', error)
     alerts.error('Failed to print label')
   }
-}
-
-const printQueue = async () => {
-  if (!confirm('Print all labels in the queue?')) return
-
-  try {
-    playSoundIfEnabled()
-    const jobList = Object.values(labelModels.value).map((label) => ({
-      ...toRaw(label),
-      client: client.value ? JSON.parse(JSON.stringify(toRaw(client.value))) : null,
-      user: currentUser.value
-    }))
-
-    await window.api.printerPrint(jobList)
-    alerts.success(`Sent ${jobList.length} label(s) to the printer`)
-  } catch (error) {
-    console.error('Print queue error:', error)
-    alerts.error('Failed to print queue')
-  }
-}
-
-const confirmClearQueue = () => {
-  printQueue()
 }
 
 // Bulk Actions
@@ -809,7 +801,7 @@ const bulkPrint = async () => {
     const jobList = jobs.map((j) => ({
       ...toRaw(j),
       client: client.value ? JSON.parse(JSON.stringify(toRaw(client.value))) : null,
-      user: currentUser.value
+      user: currentUser.value?.name || null
     }))
 
     playSoundIfEnabled()
@@ -944,13 +936,14 @@ const bulkDelete = async () => {
 }
 
 // Refresh Methods
-const refresh = () => {
-  getClient(route.params.id)
-  getClientLabels(route.params.id)
+const refresh = async () => {
+  await getClient(route.params.id)
+  await getClientLabels(route.params.id)
+  await fetchQueueCount()
 }
 
-const refreshClientLabels = () => {
-  getClientLabels(route.params.id)
+const refreshClientLabels = async () => {
+  await getClientLabels(route.params.id)
 }
 
 const refreshClient = async () => {
@@ -972,34 +965,11 @@ const refreshClient = async () => {
 
 // Navigation and Actions
 const goBack = () => {
-  router.back()
+  router.push({ name: 'Clients' })
 }
-
-const handeLogout = async () => {
-  await window.api.logoutUser()
-  router.replace({ name: 'LoginPage' })
-}
-
-const moreActions = [
-  {
-    label: 'Clients',
-    handler: () => router.push({ name: 'Clients' })
-  },
-  {
-    label: 'Logout',
-    handler: async () => await handeLogout()
-  }
-]
 
 onMounted(async () => {
-  refresh()
-
-  try {
-    const user = await window.api.getMe()
-    currentUser.value = user?.name || 'Unknown User'
-  } catch (error) {
-    console.error('Failed to get current user:', error)
-  }
+  await refresh()
 
   syncLabelModels() // Initial sync
 

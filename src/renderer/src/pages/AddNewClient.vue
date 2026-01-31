@@ -9,6 +9,8 @@
   >
     <div
       v-if="open"
+      role="dialog"
+      aria-modal="true"
       class="fixed inset-0 flex items-center justify-center bg-black/50 backdrop-blur-sm z-50 p-4 overflow-hidden"
       @click.self="$emit('close')"
       @wheel.prevent.stop
@@ -25,6 +27,8 @@
       >
         <div
           v-if="open"
+          ref="modalRef"
+          tabindex="-1"
           class="bg-white dark:bg-gray-800 w-full max-w-4xl rounded-2xl shadow-2xl grid grid-rows-[auto_1fr_auto] h-[90vh] max-h-150 sm:max-h-175 lg:max-h-[85vh]"
           @wheel.stop
           @touchmove.stop
@@ -141,12 +145,27 @@
                       <label
                         class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
                       >
-                        Email <span class="text-red-500">*</span>
+                        Email
                       </label>
                       <input
                         v-model="clientData.email"
                         type="email"
                         placeholder="Enter email address"
+                        class="w-full px-4 py-2.5 text-sm border border-gray-300 dark:border-gray-600 rounded-lg outline-0 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      />
+                    </div>
+
+                    <!-- Home Address Field -->
+                    <div>
+                      <label
+                        class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+                      >
+                        Home Address
+                      </label>
+                      <textarea
+                        v-model="clientData.home_address"
+                        type="text"
+                        placeholder="Enter home address"
                         class="w-full px-4 py-2.5 text-sm border border-gray-300 dark:border-gray-600 rounded-lg outline-0 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                       />
                     </div>
@@ -458,6 +477,7 @@
 
             <div class="flex gap-3">
               <button
+                ref="closeBtn"
                 class="px-4 py-2 text-sm font-medium border-2 border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 transition-colors"
                 @click="handleClose"
               >
@@ -465,6 +485,7 @@
               </button>
 
               <button
+                ref="saveBtn"
                 :disabled="!isFormValid"
                 class="px-5 py-2 text-sm font-medium rounded-lg bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-lg shadow-blue-500/30 disabled:shadow-none"
                 @click="confirmAdd"
@@ -478,9 +499,10 @@
     </div>
   </Transition>
 </template>
-
+<!--
 <script setup>
 import { ref, watch, computed } from 'vue'
+import { useAlerts } from '../composables/useAlerts'
 
 const props = defineProps({
   open: { type: Boolean, default: false }
@@ -488,11 +510,18 @@ const props = defineProps({
 
 const emits = defineEmits(['close', 'confirm'])
 
+const modalRef = ref(null)
+const closeBtn = ref(null)
+const saveBtn = ref(null)
+
+const alerts = useAlerts()
+
 // Client data
 const clientData = ref({
   name: '',
   contact: '',
-  email: ''
+  email: '',
+  home_address: ''
 })
 
 // Labels data
@@ -512,11 +541,7 @@ const filteredLabels = computed(() => {
 
 // Form validation
 const isFormValid = computed(() => {
-  return (
-    clientData.value.name.trim() !== '' &&
-    clientData.value.contact.trim() !== '' &&
-    clientData.value.email.trim() !== ''
-  )
+  return clientData.value.name.trim() !== '' && clientData.value.contact.trim() !== ''
 })
 
 watch(
@@ -559,7 +584,8 @@ function resetForm() {
   clientData.value = {
     name: '',
     contact: '',
-    email: ''
+    email: '',
+    home_address: ''
   }
   selectedLabels.value = []
   searchQuery.value = ''
@@ -576,7 +602,8 @@ async function confirmAdd() {
   const result = await window.api.createClient(
     clientData.value.name,
     clientData.value.contact,
-    clientData.value.email
+    clientData.value.email,
+    clientData.value.home_address
   )
   console.log(result)
   const clientId = result.lastInsertRowid
@@ -591,8 +618,205 @@ async function confirmAdd() {
     await window.api.createClientLabels(labelsToAdd)
   }
 
+  alerts.success('Client added successfully.')
+
   emits('confirm', result)
   resetForm()
+}
+</script> -->
+
+<script setup>
+import { ref, watch, computed, nextTick, onUnmounted } from 'vue'
+import { useAlerts } from '../composables/useAlerts'
+
+const props = defineProps({
+  open: { type: Boolean, default: false }
+})
+
+const emits = defineEmits(['close', 'confirm'])
+
+/* ---------------- refs (focus) ---------------- */
+
+const modalRef = ref(null)
+const closeBtn = ref(null)
+const saveBtn = ref(null)
+
+let lastFocused = null
+
+const alerts = useAlerts()
+
+/* ---------------- client data ---------------- */
+
+const clientData = ref({
+  name: '',
+  contact: '',
+  email: '',
+  home_address: ''
+})
+
+/* ---------------- labels data ---------------- */
+
+const dbLabels = ref([])
+const selectedLabels = ref([])
+const loading = ref(false)
+const error = ref(null)
+const searchQuery = ref('')
+
+/* ---------------- computed ---------------- */
+
+const filteredLabels = computed(() => {
+  if (!searchQuery.value) return dbLabels.value
+  const query = searchQuery.value.toLowerCase()
+  return dbLabels.value.filter((l) => l.product.toLowerCase().includes(query))
+})
+
+const isFormValid = computed(() => {
+  return clientData.value.name.trim() !== '' && clientData.value.contact.trim() !== ''
+})
+
+/* ---------------- focus trap ---------------- */
+
+function handleKeydown(e) {
+  if (!props.open || !modalRef.value) return
+
+  if (e.key === 'Escape') {
+    e.preventDefault()
+    handleClose()
+    return
+  }
+
+  if (e.key === 'Tab') {
+    const focusables = modalRef.value.querySelectorAll(
+      'button:not([disabled]), input, textarea, select, [tabindex]:not([tabindex="-1"])'
+    )
+
+    if (!focusables.length) return
+
+    const first = focusables[0]
+    const last = focusables[focusables.length - 1]
+
+    if (e.shiftKey && document.activeElement === first) {
+      e.preventDefault()
+      last.focus()
+    } else if (!e.shiftKey && document.activeElement === last) {
+      e.preventDefault()
+      first.focus()
+    }
+  }
+}
+
+/* ---------------- lifecycle ---------------- */
+
+watch(
+  () => props.open,
+  async (open) => {
+    if (open) {
+      lastFocused = document.activeElement
+      resetForm()
+      await loadDbLabels()
+      await nextTick()
+      closeBtn.value?.focus()
+      window.addEventListener('keydown', handleKeydown)
+    } else {
+      window.removeEventListener('keydown', handleKeydown)
+      lastFocused?.focus()
+    }
+  }
+)
+
+onUnmounted(() => {
+  window.removeEventListener('keydown', handleKeydown)
+})
+
+/* ---------------- API ---------------- */
+
+async function loadDbLabels() {
+  loading.value = true
+  error.value = null
+  try {
+    dbLabels.value = await window.api.getLabels('')
+  } catch (e) {
+    error.value = 'Failed to fetch labels'
+    console.error(e)
+    alerts.error('Failed to load labels.')
+  } finally {
+    loading.value = false
+  }
+}
+
+/* ---------------- label selection ---------------- */
+
+function selectLabel(label) {
+  if (selectedLabels.value.some((x) => x.id === label.id)) return
+
+  selectedLabels.value.push({
+    ...label,
+    tempId: crypto.randomUUID()
+  })
+}
+
+function removeSelectedLabel(i) {
+  selectedLabels.value.splice(i, 1)
+}
+
+/* ---------------- form helpers ---------------- */
+
+function resetForm() {
+  clientData.value = {
+    name: '',
+    contact: '',
+    email: '',
+    home_address: ''
+  }
+  selectedLabels.value = []
+  searchQuery.value = ''
+}
+
+function handleClose() {
+  resetForm()
+  emits('close')
+}
+
+/* ---------------- confirm ---------------- */
+
+async function confirmAdd() {
+  if (!isFormValid.value) {
+    alerts.info('Please fill in required fields.')
+    return
+  }
+
+  try {
+    loading.value = true
+
+    const result = await window.api.createClient(
+      clientData.value.name,
+      clientData.value.contact,
+      clientData.value.email,
+      clientData.value.home_address
+    )
+
+    const clientId = result?.lastInsertRowid
+    if (!clientId) throw new Error('Client creation failed')
+
+    if (selectedLabels.value.length > 0) {
+      const labelsToAdd = selectedLabels.value.map((l) => ({
+        client_id: clientId,
+        product: l.product,
+        instructions: l.instructions,
+        warning: l.warning
+      }))
+      await window.api.createClientLabels(labelsToAdd)
+    }
+
+    alerts.success('Client added successfully.')
+    emits('confirm', result)
+    resetForm()
+  } catch (e) {
+    console.error(e)
+    alerts.error('Failed to add client.')
+  } finally {
+    loading.value = false
+  }
 }
 </script>
 

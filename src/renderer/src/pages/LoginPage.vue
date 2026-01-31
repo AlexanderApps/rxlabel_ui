@@ -213,6 +213,7 @@
 
           <input
             id="username"
+            ref="focusUsernameInput"
             type="text"
             :value="username"
             placeholder="Enter your username"
@@ -305,7 +306,8 @@
         </div>
 
         <!-- Remember Me & Forgot Password -->
-        <div class="flex items-center justify-between">
+        <!-- <div class="flex items-center justify-between">
+
           <label class="flex items-center">
             <input
               type="checkbox"
@@ -325,8 +327,9 @@
           >
             Forgot password?
           </button>
-        </div>
+        </div> -->
 
+        <div class="h-0.5"></div>
         <!-- Submit Button -->
         <button
           class="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-3 rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center gap-2"
@@ -380,6 +383,7 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
+import { useSettings } from '../composables/useSettings'
 
 const router = useRouter()
 const username = ref('')
@@ -387,10 +391,13 @@ const password = ref('')
 const showPassword = ref(false)
 const isDark = ref(false)
 const isLoading = ref(false)
+const { refreshSettingsAndUser } = useSettings()
+const focusUsernameInput = ref(null)
 
 onMounted(() => {
   const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches
   isDark.value = prefersDark
+  focusUsernameInput.value?.focus()
 })
 
 const delay = (ms) => new Promise((res) => setTimeout(res, ms))
@@ -403,7 +410,10 @@ const handleSubmit = async () => {
     const response = await window.api.loginUser(username.value, password.value)
 
     if (response?.success) {
-      router.replace({ name: 'MedicationLabel' })
+      setTimeout(async () => {
+        await refreshSettingsAndUser()
+        router.replace({ name: 'MedicationLabel' })
+      }, 500)
     }
   } catch (error) {
     console.error('Sign in error:', error)

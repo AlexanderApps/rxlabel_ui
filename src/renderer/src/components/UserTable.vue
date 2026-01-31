@@ -31,7 +31,7 @@
             ref="searchInput"
             v-model="searchQuery"
             type="text"
-            placeholder="Search by ID, Name, Contact, Email... or Address"
+            placeholder="Search by ID, Name, Email, Role or Position..."
             class="block w-full pl-10 pr-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
             @input="currentPage = 1"
           />
@@ -59,7 +59,7 @@
         <!-- Results count and Bulk Actions -->
         <div class="mt-3 flex items-center justify-between">
           <div class="text-sm text-gray-600 dark:text-gray-400">
-            {{ sortedData.length }} {{ sortedData.length === 1 ? 'client' : 'clients' }} found
+            {{ sortedData.length }} {{ sortedData.length === 1 ? 'user' : 'users' }} found
             <span
               v-if="selected.length > 0"
               class="ml-2 text-blue-600 dark:text-blue-400 font-medium"
@@ -73,43 +73,10 @@
             <span class="text-sm text-gray-600 dark:text-gray-400 font-medium mr-2"
               >Bulk Actions:</span
             >
-            <button
-              class="px-4 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-lg transition-all duration-200 flex items-center gap-2 shadow-sm hover:shadow-md select-none"
-              @click="bulkSendToQueue"
-            >
-              <svg
-                class="w-4 h-4"
-                xmlns="http://www.w3.org/2000/svg"
-                viewBox="0 0 20 20"
-                fill="currentColor"
-              >
-                <path
-                  d="M10 2a6 6 0 00-6 6v3.586l-.707.707A1 1 0 004 14h12a1 1 0 00.707-1.707L16 11.586V8a6 6 0 00-6-6zM10 18a3 3 0 01-3-3h6a3 3 0 01-3 3z"
-                />
-              </svg>
-              Queue ({{ selected.length }})
-            </button>
-            <button
-              class="px-4 py-2 text-sm font-medium text-white bg-green-600 hover:bg-green-700 rounded-lg transition-all duration-200 flex items-center gap-2 shadow-sm hover:shadow-md select-none"
-              @click="bulkPrintLabels"
-            >
-              <svg
-                class="w-4 h-4"
-                xmlns="http://www.w3.org/2000/svg"
-                viewBox="0 0 20 20"
-                fill="currentColor"
-              >
-                <path
-                  fill-rule="evenodd"
-                  d="M5 4v3H4a2 2 0 00-2 2v3a2 2 0 002 2h1v2a2 2 0 002 2h6a2 2 0 002-2v-2h1a2 2 0 002-2V9a2 2 0 00-2-2h-1V4a2 2 0 00-2-2H7a2 2 0 00-2 2zm8 0H7v3h6V4zm0 8H7v4h6v-4z"
-                  clip-rule="evenodd"
-                />
-              </svg>
-              Print ({{ selected.length }})
-            </button>
+
             <button
               class="px-4 py-2 text-sm font-medium text-white bg-red-600 hover:bg-red-700 rounded-lg transition-all duration-200 flex items-center gap-2 shadow-sm hover:shadow-md select-none"
-              @click="bulkDeleteClients"
+              @click="bulkDeleteUsers"
             >
               <svg
                 class="w-4 h-4"
@@ -128,7 +95,7 @@
           </div>
           <button
             class="flex items-center font-medium gap-1.5 h-7 px-3 py-1.5 bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 rounded-lg transition-colors text-sm whitespace-nowrap"
-            @click="showClientModal = true"
+            @click="showUserModal = true"
           >
             <svg
               xmlns="http://www.w3.org/2000/svg"
@@ -140,7 +107,7 @@
                 d="M8 4a.5.5 0 0 1 .5.5v3h3a.5.5 0 0 1 0 1h-3v3a.5.5 0 0 1-1 0v-3h-3a.5.5 0 0 1 0-1h3v-3A.5.5 0 0 1 8 4"
               />
             </svg>
-            Add Client
+            Add User
           </button>
         </div>
       </div>
@@ -174,7 +141,7 @@
                   </th>
 
                   <th
-                    v-for="key in ['id', 'name', 'contact', 'email', 'home']"
+                    v-for="key in ['id', 'name', 'email', 'role', 'position']"
                     :key="key"
                     class="px-6 py-4 text-left text-xs font-semibold text-gray-700 dark:text-gray-200 uppercase tracking-wider cursor-pointer hover:bg-gray-200 dark:hover:bg-gray-700 select-none transition-colors bg-gray-50 dark:bg-gray-900"
                     @click="handleSort(key)"
@@ -225,17 +192,17 @@
                   </td>
                   <td class="px-6 py-4 whitespace-nowrap">
                     <div class="text-sm text-gray-600 dark:text-gray-400">
-                      {{ item.contact }}
+                      {{ item.email }}
                     </div>
                   </td>
                   <td class="px-6 py-4 whitespace-nowrap">
                     <div class="text-sm text-gray-600 dark:text-gray-400">
-                      {{ item.email }}
+                      {{ item.role }}
                     </div>
                   </td>
-                  <td class="px-6 py-4 text-ellipsis">
+                  <td class="px-6 py-4 whitespace-nowrap">
                     <div class="text-sm text-gray-600 dark:text-gray-400">
-                      {{ item.home_address }}
+                      {{ item.position }}
                     </div>
                   </td>
 
@@ -266,7 +233,7 @@
                       <button
                         class="p-2 rounded-lg bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 hover:bg-red-200 dark:hover:bg-red-900/50 transition-all duration-200 hover:scale-110 select-none"
                         title="Delete"
-                        @click="deleteClientConfirmed(item.id)"
+                        @click="deleteUserConfirmed(item.id)"
                       >
                         <svg
                           xmlns="http://www.w3.org/2000/svg"
@@ -279,30 +246,6 @@
                           />
                         </svg>
                       </button>
-                      <MoreMenu
-                        :actions="getClientActions(item.id)"
-                        :is-open="openMenuId === item.id"
-                        @toggle="toggleMenu(item.id)"
-                      >
-                        <template #trigger>
-                          <button
-                            class="p-2 rounded-lg bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 transition-all duration-200 text-gray-700 dark:text-gray-300 select-none"
-                            :class="{ 'bg-gray-200 dark:bg-gray-600': openMenuId === item.id }"
-                            title="More actions"
-                          >
-                            <svg
-                              xmlns="http://www.w3.org/2000/svg"
-                              class="w-4 h-4"
-                              fill="currentColor"
-                              viewBox="0 0 16 16"
-                            >
-                              <path
-                                d="M9.5 13a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0m0-5a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0m0-5a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0"
-                              />
-                            </svg>
-                          </button>
-                        </template>
-                      </MoreMenu>
                     </div>
                   </td>
                 </tr>
@@ -327,7 +270,7 @@
                           d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4"
                         />
                       </svg>
-                      <p class="text-lg font-medium">No clients found</p>
+                      <p class="text-lg font-medium">No users found</p>
                       <p class="text-sm mt-1">Try adjusting your search terms</p>
                     </div>
                   </td>
@@ -436,11 +379,7 @@
       </div>
     </div>
   </div>
-  <AddNewClient
-    :open="showClientModal"
-    @close="showClientModal = false"
-    @confirm="handleClientAdded"
-  />
+  <AddNewUser :open="showUserModal" @close="showUserModal = false" @confirm="handleUserAdded" />
 </template>
 
 <script setup>
@@ -449,10 +388,10 @@
  * ========================================================= */
 import { ref, computed, readonly, defineExpose, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
-import MoreMenu from './MoreMenu.vue'
-import AddNewClient from '../pages/AddNewClient.vue'
+import AddNewUser from '../pages/AddNewUser.vue'
 import { useAlerts } from '../composables/useAlerts.js'
 import { useConfirm } from '../composables/useConfirm.js'
+import { runQuery } from '../utils/api.js'
 
 defineEmits(['refresh'])
 
@@ -466,8 +405,8 @@ const { confirm } = useConfirm()
 /* =========================================================
  * State
  * ========================================================= */
-const showClientModal = ref(false)
-const clients = ref([])
+const showUserModal = ref(false)
+const users = ref([])
 const selected = ref([])
 const openMenuId = ref(null)
 
@@ -476,16 +415,15 @@ const itemsPerPage = ref(10)
 
 const sortConfig = ref({ key: null, direction: 'asc' })
 const searchQuery = ref('')
-
 const searchInput = ref(null)
 
 /* =========================================================
  * Keyboard Shortcuts
  * ========================================================= */
 const handleKeyDown = (event) => {
-  if (event.key === 'Escape' && showClientModal.value) {
+  if (event.key === 'Escape' && showUserModal.value) {
     event.preventDefault()
-    showClientModal.value = false
+    showUserModal.value = false
     return
   }
   const isModKey = event.ctrlKey || event.metaKey
@@ -497,10 +435,10 @@ const handleKeyDown = (event) => {
     return
   }
 
-  /* Ctrl/Cmd + N → Add new client */
+  /* Ctrl/Cmd + N → Add new user */
   if (isModKey && event.key.toLowerCase() === 'n') {
     event.preventDefault()
-    showClientModal.value = true
+    showUserModal.value = true
     return
   }
 
@@ -536,13 +474,13 @@ const handleSort = (key) => {
 
 const filteredData = computed(() => {
   const q = searchQuery.value.toLowerCase()
-  return clients.value.filter(
+  return users.value.filter(
     (item) =>
       item.id.toString().includes(q) ||
       item.name.toLowerCase().includes(q) ||
-      item.contact.toLowerCase().includes(q) ||
       item.email.toLowerCase().includes(q) ||
-      item.home_address.toLowerCase().includes(q)
+      item.role.toLowerCase().includes(q) ||
+      item.position.toLowerCase().includes(q)
   )
 })
 
@@ -585,177 +523,93 @@ const toggleSelectAll = () => {
 /* =========================================================
  * API Calls
  * ========================================================= */
-const loadClients = async () => {
+const loadUsers = async () => {
   try {
-    clients.value = await window.api.getClients()
+    users.value = await runQuery(window.api.getUsers)
   } catch (error) {
     console.error(error)
-    alerts.error('Failed to load clients')
+    alerts.error('Failed to load users')
   }
 }
 
 /* =========================================================
- * Single Client Actions
+ * Single User Actions
  * ========================================================= */
-const sendToQueue = async (client) => {
+const deleteUser = async (user) => {
   try {
-    const count = await window.api.countClientLabels(client)
-    if (count <= 0) return alerts.error('Client label is empty')
-
-    await window.api.sendToQueue(client)
-    alerts.success('Sent to queue successfully')
+    await window.api.deleteUser(user)
+    await loadUsers()
+    alerts.success('Deleted user successfully')
   } catch (error) {
     console.error(error)
-    alerts.error('Failed to send client to queue')
-  }
-}
-
-const printLabels = async (client) => {
-  try {
-    const count = await window.api.countClientLabels(client)
-    if (count <= 0) return alerts.error('Client label is empty')
-
-    await window.api.clientLabelsPrint(client)
-    alerts.success('Sent labels to printer successfully')
-  } catch (error) {
-    console.error(error)
-    alerts.error('Failed to print labels')
-  }
-}
-
-const deleteClient = async (client) => {
-  try {
-    await window.api.deleteClient(client)
-    alerts.success('Deleted client successfully')
-    await loadClients()
-  } catch (error) {
-    console.error(error)
-    alerts.error('Failed to delete client')
+    alerts.error('Failed to delete user')
   }
 }
 
 /* =========================================================
  * Confirmed Actions
  * ========================================================= */
-const sendToQueueConfirmed = async (id) => {
-  if (await confirm('Send to Queue?')) await sendToQueue(id)
-}
-
-const printLabelsConfirmed = async (id) => {
-  if (await confirm('Send to printer?')) await printLabels(id)
-}
-
-const deleteClientConfirmed = async (id) => {
-  if (await confirm('Delete client and all associated data?')) await deleteClient(id)
+const deleteUserConfirmed = async (id) => {
+  if (await confirm('Delete user and all associated data?')) {
+    await deleteUser(id)
+  }
 }
 
 /* =========================================================
  * Bulk Actions
  * ========================================================= */
-const bulkSendToQueue = async () => {
-  if (!(await confirm(`Send ${selected.value.length} client(s) to queue?`))) return
+const bulkDeleteUsers = async () => {
+  if (!(await confirm(`Delete ${selected.value.length} user(s) and all associated data?`))) return
 
   let success = 0
   let fail = 0
 
-  for (const id of selected.value) {
+  for (const userId of selected.value) {
     try {
-      const count = await window.api.countClientLabels(id)
-      if (count > 0) {
-        await window.api.sendToQueue(id)
-        success++
-      } else fail++
-    } catch {
-      fail++
-    }
-  }
-
-  success && alerts.success(`${success} client(s) sent to queue`)
-  fail && alerts.error(`${fail} client(s) failed`)
-  selected.value = []
-}
-
-const bulkPrintLabels = async () => {
-  if (!(await confirm(`Print labels for ${selected.value.length} client(s)?`))) return
-
-  let success = 0
-  let fail = 0
-
-  for (const id of selected.value) {
-    try {
-      const count = await window.api.countClientLabels(id)
-      if (count > 0) {
-        await window.api.clientLabelsPrint(id)
-        success++
-      } else fail++
-    } catch {
-      fail++
-    }
-  }
-
-  success && alerts.success(`${success} client(s) sent to printer`)
-  fail && alerts.error(`${fail} client(s) failed`)
-  selected.value = []
-}
-
-const bulkDeleteClients = async () => {
-  if (!(await confirm(`Delete ${selected.value.length} client(s)?`))) return
-
-  let success = 0
-  let fail = 0
-
-  for (const id of selected.value) {
-    try {
-      await window.api.deleteClient(id)
+      await window.api.deleteUser(userId)
       success++
-    } catch {
+    } catch (error) {
+      console.error(error)
       fail++
     }
   }
 
-  success && alerts.success(`${success} client(s) deleted`)
-  fail && alerts.error(`${fail} client(s) failed`)
-  await loadClients()
+  success && alerts.success(`${success} user(s) deleted successfully`)
+  fail && alerts.error(`${fail} user(s) failed to delete`)
+
+  await loadUsers()
   selected.value = []
 }
 
 /* =========================================================
- * UI Helpers
+ * Navigation / UI Helpers
  * ========================================================= */
-const getClientActions = (client) => [
-  { label: 'Send to Queue', handler: async () => sendToQueueConfirmed(client) },
-  { label: 'Print Labels', handler: async () => printLabelsConfirmed(client) }
-]
+const handleEdit = (id) => router.push({ name: 'User', params: { id } })
 
-const handleEdit = (id) => router.push({ name: 'Client', params: { id } })
-
-const toggleMenu = (id) => {
-  openMenuId.value = openMenuId.value === id ? null : id
+const handleUserAdded = async () => {
+  showUserModal.value = false
+  await loadUsers()
 }
 
+// Close menu when clicking outside / scrolling
 const closeMenu = () => {
   openMenuId.value = null
-}
-
-const handleClientAdded = async () => {
-  showClientModal.value = false
-  await loadClients()
 }
 
 /* =========================================================
  * Expose
  * ========================================================= */
 defineExpose({
-  refresh: loadClients,
+  refresh: loadUsers,
   selected: readonly(selected),
-  clients: readonly(clients)
+  users: readonly(users)
 })
 
 /* =========================================================
  * Lifecycle
  * ========================================================= */
 onMounted(async () => {
-  await loadClients()
+  await loadUsers()
   window.addEventListener('keydown', handleKeyDown)
 })
 

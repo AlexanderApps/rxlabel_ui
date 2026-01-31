@@ -41,7 +41,7 @@
           >
             Print Queue
           </button>
-          <GlobalMoreMenu :includes="['Clients', 'Settings', 'Logout']" />
+          <GlobalMoreMenu :includes="['Clients', 'Users', 'Settings', 'Logout']" />
           <button
             class="text-sm font-medium text-gray-50 bg-black dark:bg-gray-100 dark:hover:bg-gray-100/70 dark:text-gray-900 py-1 px-2 rounded-lg"
             @click="goToLabel"
@@ -58,7 +58,7 @@
           :key="label.id"
           v-model="labelModels[label.id]"
           :current-date="formattedDate"
-          :current-user="currentUser"
+          :current-user="currentUser?.name || ''"
           @remove="() => removeFromQueue(label.id)"
           @update="() => saveLabel(label.id)"
           @print="() => printLabel(label.id)"
@@ -69,7 +69,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, reactive } from 'vue'
+import { ref, reactive, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 import LabelQueueCardV2 from '../components/LabelQueueCardV2.vue'
 import { useAlerts } from '../composables/useAlerts.js'
@@ -79,14 +79,32 @@ import { useSettings } from '../composables/useSettings.js'
 import { useConfirm } from '../composables/useConfirm.js'
 
 const router = useRouter()
-const { formattedDate, playSoundIfEnabled } = useSettings()
+const { formattedDate, currentUser, playSoundIfEnabled } = useSettings()
 const labels = ref([])
 const labelModels = reactive({})
 const queueCount = ref(0)
 const alerts = useAlerts()
 const isRefreshing = ref(false)
-const currentUser = ref('')
 const { confirm } = useConfirm()
+
+/* =========================
+ * Keyboard Shortcuts
+ * ========================= */
+const handleKeyDown = (event) => {
+  const isModKey = event.ctrlKey || event.metaKey
+
+  // Ctrl / Cmd + P → Print Queue
+  if (isModKey && event.key.toLowerCase() === 'p') {
+    event.preventDefault()
+    printQueue()
+  }
+
+  // Ctrl / Cmd + I → Clear Queue
+  if (isModKey && event.key.toLowerCase() === 'i') {
+    event.preventDefault()
+    confirmClearQueue()
+  }
+}
 
 const confirmClearQueue = async () => {
   if (await confirm('Clear the entire queue?')) {
@@ -168,12 +186,15 @@ function goToLabel() {
   router.push({ name: 'MedicationLabel' })
 }
 
+/* =========================
+ * Lifecycle
+ * ========================= */
 onMounted(async () => {
-  const user = await window.api.getMe()
-  currentUser.value = user?.name || ''
-  refresh()
+  window.addEventListener('keydown', handleKeyDown)
+  await refresh()
 })
 
-// only reload when search input changes
-// watch(search, loadLabels)
+onUnmounted(() => {
+  window.removeEventListener('keydown', handleKeyDown)
+})
 </script>

@@ -46,7 +46,7 @@
             </svg>
           </button>
 
-          <GlobalMoreMenu :includes="['Clients', 'Logout']" />
+          <GlobalMoreMenu :includes="['Clients', 'Users', 'Admin', 'Logout']" />
 
           <button class="btn-queue" @click="goToQueue">View Queue</button>
         </template>
@@ -143,7 +143,7 @@
           v-model="labelModels[label.id]"
           :current-date="formattedDate"
           :client-name="client"
-          :current-user="currentUser"
+          :current-user="currentUser?.name || ''"
           @remove="() => removeLabelConfirmed(label.id)"
           @update="() => saveLabel(label.id)"
           @queue="() => addToQueue(label.id)"
@@ -155,149 +155,223 @@
 </template>
 
 <script setup>
-import { ref, onMounted, watch, reactive, onUnmounted } from 'vue'
+/* =========================
+ * Imports
+ * ========================= */
+import { ref, reactive, onMounted, onUnmounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAlerts } from '../composables/useAlerts.js'
 import { useSettings, showSettings } from '../composables/useSettings.js'
 import { useConfirm } from '../composables/useConfirm.js'
+
 import LabelCardV2 from '../components/LabelCardV2.vue'
 import Header from '../components/Header.vue'
 import AddLabelModal from './AddLabelModal.vue'
 import GlobalMoreMenu from '../components/GlobalMoreMenu.vue'
 
+/* =========================
+ * Composables / Globals
+ * ========================= */
 const router = useRouter()
 const alerts = useAlerts()
 const { confirm } = useConfirm()
-const { formattedDate, playSoundIfEnabled } = useSettings()
+const { formattedDate, currentUser, playSoundIfEnabled, closeSettings } = useSettings()
 
-// ----- State -----
+/* =========================
+ * State
+ * ========================= */
 const labels = ref([])
 const labelModels = reactive({})
+
 const search = ref('')
 const client = ref('')
 const queueCount = ref(0)
-const currentUser = ref('')
+
 const searchInput = ref(null)
 const clientInput = ref(null)
 
+const showModal = ref(false)
+const isRefreshing = ref(false)
+const isOpeningSettings = ref(false)
+
+/* =========================
+ * Keyboard Shortcuts
+ * ========================= */
 const handleKeyDown = (event) => {
+  // ESC → Close modal if open
+  if (event.key === 'Escape' && (showModal.value || showSettings.value)) {
+    event.preventDefault()
+    showModal.value = false
+    closeSettings()
+    return
+  }
   const isModKey = event.ctrlKey || event.metaKey
 
-  // Ctrl + K -> Focus Search
+  // Ctrl / Cmd + K → Focus search
   if (isModKey && event.key.toLowerCase() === 'k') {
     event.preventDefault()
     searchInput.value?.focus()
   }
 
-  // Ctrl + O -> Focus Client
+  // Ctrl / Cmd + O → Focus client
   if (isModKey && event.key.toLowerCase() === 'o') {
     event.preventDefault()
     clientInput.value?.focus()
   }
 
-  // Ctrl + J -> Go to Queue
-  if (isModKey && event.key.toLowerCase() === 'j') {
-    event.preventDefault()
-    goToQueue()
-  }
-
-  // Ctrl + N -> New Label
+  // Ctrl / Cmd + N → New label
   if (isModKey && event.key.toLowerCase() === 'n') {
     event.preventDefault()
     addNewLabel()
   }
-  // Ctrl + , -> Open Settings
-  if (isModKey && event.key === ',') {
-    event.preventDefault()
-    showSettings.value = true
+}
+
+/* =========================
+ * API Helpers
+ * ========================= */
+const fetchQueueCount = async () => {
+  try {
+    queueCount.value = await window.api.countQueue()
+  } catch (err) {
+    alerts.error('Failed to fetch queue count.')
+    console.error(err)
   }
 }
 
-const isRefreshing = ref(false)
-const isOpeningSettings = ref(false)
-
-const showModal = ref(false)
-
-const handleSave = async (labels_list) => {
-  // Save new unsaved labels
-  const createPromises = labels_list.map(async (l) => {
-    await window.api.createLabel(l.product, l.instructions, l.warning)
-  })
-
-  await Promise.all(createPromises)
-  showModal.value = false
-  refresh()
-  alerts.success('Successfully added item(s) to labels')
-}
-
-const fetchQueueCount = async () => {
-  queueCount.value = await window.api.countQueue()
-}
-
 const loadLabels = async () => {
-  const data = await window.api.getLabels(search.value)
-  labels.value = data
+  try {
+    const data = await window.api.getLabels(search.value)
+    labels.value = data
 
-  // reset cache
-  for (const k in labelModels) delete labelModels[k]
+    // Reset local cache
+    for (const k in labelModels) delete labelModels[k]
 
-  // hydrate models
-  data.forEach((l) => (labelModels[l.id] = { ...l, client: client.value, _dirty: false }))
+    // Hydrate local models
+    data.forEach((l) => {
+      labelModels[l.id] = {
+        ...l,
+        client: client.value,
+        _dirty: false
+      }
+    })
+  } catch (err) {
+    alerts.error('Failed to load labels.')
+    console.error(err)
+  }
 }
 
-// ----- Actions -----
+/* =========================
+ * Core Actions
+ * ========================= */
 const refresh = async () => {
   await Promise.all([loadLabels(), fetchQueueCount()])
 }
 
 const refreshLabels = async () => {
   if (isRefreshing.value) return
+
   isRefreshing.value = true
-
-  await refresh()
-
-  setTimeout(() => {
-    alerts.info('Labels refreshed.')
-    isRefreshing.value = false
-  }, 800)
-}
-
-const saveLabel = async (id) => {
-  const selected = { ...labelModels[id] }
-  await window.api.updateLabel(id, selected.product, selected.instructions, selected.warning)
-  await refresh()
-  alerts.success('Update completed sucessfully')
-}
-
-const removeLabelConfirmed = async (id) => {
-  if (await confirm('Delete this item?')) {
-    await window.api.deleteLabel(id)
+  try {
     await refresh()
-    alerts.success('Delete completed successfully')
+    setTimeout(() => {
+      alerts.info('Labels refresh completed.')
+    }, 500)
+  } catch (err) {
+    alerts.error('Failed to refresh labels.')
+    console.error(err)
+  } finally {
+    setTimeout(() => {
+      isRefreshing.value = false
+    }, 800)
   }
 }
 
+/* =========================
+ * CRUD Operations
+ * ========================= */
+const handleSave = async (labels_list) => {
+  try {
+    const createPromises = labels_list.map((l) =>
+      window.api.createLabel(l.product, l.instructions, l.warning)
+    )
+
+    await Promise.all(createPromises)
+    showModal.value = false
+    await refresh()
+
+    alerts.success('Successfully added item(s) to labels')
+  } catch (err) {
+    alerts.error('Failed to save labels.')
+    console.error(err)
+  }
+}
+
+const saveLabel = async (id) => {
+  try {
+    const selected = { ...labelModels[id] }
+    await window.api.updateLabel(id, selected.product, selected.instructions, selected.warning)
+
+    await refresh()
+    alerts.success('Update completed successfully')
+  } catch (err) {
+    alerts.error('Failed to update label.')
+    console.error(err)
+  }
+}
+
+const removeLabelConfirmed = async (id) => {
+  try {
+    const accepted = await confirm('Delete this item?')
+    if (!accepted) return
+
+    await window.api.deleteLabel(id)
+    await refresh()
+
+    alerts.success('Delete completed successfully')
+  } catch (err) {
+    alerts.error('Failed to delete label.')
+    console.error(err)
+  }
+}
+
+/* =========================
+ * Queue & Printing
+ * ========================= */
 const addToQueue = async (id) => {
-  await window.api.addToQueue({ ...labelModels[id] })
-  await fetchQueueCount()
-  alerts.success('Item added to queue')
+  try {
+    await window.api.addToQueue({ ...labelModels[id] })
+    await fetchQueueCount()
+
+    alerts.success('Item added to queue successfully.')
+  } catch (err) {
+    alerts.error('Failed to add item to queue.')
+    console.error(err)
+  }
 }
 
 const printLabel = async (id) => {
-  playSoundIfEnabled()
-  await window.api.printerPrint({ ...labelModels[id] })
+  try {
+    playSoundIfEnabled()
+    await window.api.printerPrint({ ...labelModels[id] })
 
-  alerts.error('Print functionality not implemented.')
+    alerts.error('Print functionality not implemented.')
+  } catch (err) {
+    alerts.error('Printing failed.')
+    console.error(err)
+  }
 }
 
+/* =========================
+ * Navigation / UI Actions
+ * ========================= */
 const goToQueue = () => {
   router.push({ name: 'MedicationLabelQueue' })
 }
 
 const openSettings = () => {
   if (isOpeningSettings.value) return
-  isOpeningSettings.value = true
 
+  isOpeningSettings.value = true
   setTimeout(() => {
     showSettings.value = true
     isOpeningSettings.value = false
@@ -308,11 +382,11 @@ const addNewLabel = () => {
   showModal.value = true
 }
 
-// ----- Lifecycle -----
+/* =========================
+ * Lifecycle
+ * ========================= */
 onMounted(async () => {
   window.addEventListener('keydown', handleKeyDown)
-  const user = await window.api.getMe()
-  currentUser.value = user?.name || ''
   await refresh()
 })
 
@@ -320,6 +394,8 @@ onUnmounted(() => {
   window.removeEventListener('keydown', handleKeyDown)
 })
 
-// ----- Watch -----
+/* =========================
+ * Watchers
+ * ========================= */
 watch(search, loadLabels)
 </script>

@@ -9,6 +9,8 @@
   >
     <div
       v-if="open"
+      role="dialog"
+      aria-modal="true"
       class="fixed inset-0 flex items-center justify-center bg-black/50 backdrop-blur-sm z-50 p-4 overflow-hidden"
       @click.self="$emit('close')"
       @wheel.prevent.stop
@@ -25,6 +27,8 @@
       >
         <div
           v-if="open"
+          ref="modalRef"
+          tabindex="-1"
           class="bg-white dark:bg-gray-800 w-full max-w-4xl rounded-2xl shadow-2xl grid grid-rows-[auto_1fr_auto] h-[90vh] max-h-150 sm:max-h-175 lg:max-h-[85vh]"
           @wheel.stop
           @touchmove.stop
@@ -374,6 +378,7 @@
 
             <div class="flex gap-3">
               <button
+                ref="closeBtn"
                 class="px-4 py-2 text-sm font-medium border-2 border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 transition-colors"
                 @click="$emit('close')"
               >
@@ -398,7 +403,7 @@
   </Transition>
 </template>
 
-<script setup>
+<!-- <script setup>
 import { ref, watch, computed } from 'vue'
 
 const props = defineProps({
@@ -461,6 +466,127 @@ function removeSelected(i) {
 function confirmAdd() {
   const selectedCopy = [...selected.value]
   emits('confirm', selectedCopy)
+  selected.value = []
+}
+</script> -->
+
+<script setup>
+import { ref, watch, computed, nextTick, onUnmounted } from 'vue'
+
+const props = defineProps({
+  open: { type: Boolean, default: false }
+})
+
+const emits = defineEmits(['close', 'confirm'])
+
+/* ---------------- focus refs ---------------- */
+
+const modalRef = ref(null)
+const closeBtn = ref(null)
+let lastFocused = null
+
+/* ---------------- state ---------------- */
+
+const dbLabels = ref([])
+const selected = ref([])
+const loading = ref(false)
+const error = ref(null)
+const searchQuery = ref('')
+
+/* ---------------- computed ---------------- */
+
+const filteredLabels = computed(() => {
+  if (!searchQuery.value) return dbLabels.value
+  const query = searchQuery.value.toLowerCase()
+  return dbLabels.value.filter((l) => l.product.toLowerCase().includes(query))
+})
+
+/* ---------------- focus trap ---------------- */
+
+function handleKeydown(e) {
+  if (!props.open || !modalRef.value) return
+
+  if (e.key === 'Escape') {
+    e.preventDefault()
+    emits('close')
+    return
+  }
+
+  if (e.key !== 'Tab') return
+
+  const focusables = modalRef.value.querySelectorAll(
+    'button:not([disabled]), input, textarea, select, [tabindex]:not([tabindex="-1"])'
+  )
+
+  if (!focusables.length) return
+
+  const first = focusables[0]
+  const last = focusables[focusables.length - 1]
+
+  if (e.shiftKey && document.activeElement === first) {
+    e.preventDefault()
+    last.focus()
+  } else if (!e.shiftKey && document.activeElement === last) {
+    e.preventDefault()
+    first.focus()
+  }
+}
+
+/* ---------------- lifecycle ---------------- */
+
+watch(
+  () => props.open,
+  async (open) => {
+    if (open) {
+      lastFocused = document.activeElement
+      searchQuery.value = ''
+      await loadDbLabels()
+      await nextTick()
+      closeBtn.value?.focus()
+      window.addEventListener('keydown', handleKeydown)
+    } else {
+      window.removeEventListener('keydown', handleKeydown)
+      lastFocused?.focus()
+    }
+  }
+)
+
+onUnmounted(() => {
+  window.removeEventListener('keydown', handleKeydown)
+})
+
+/* ---------------- API ---------------- */
+
+async function loadDbLabels() {
+  loading.value = true
+  error.value = null
+  try {
+    dbLabels.value = await window.api.getLabels('')
+  } catch (e) {
+    error.value = 'Failed to fetch labels'
+    console.error(e)
+  } finally {
+    loading.value = false
+  }
+}
+
+/* ---------------- actions ---------------- */
+
+function selectLabel(label) {
+  if (selected.value.some((x) => x.id === label.id)) return
+
+  selected.value.push({
+    ...label,
+    tempId: crypto.randomUUID()
+  })
+}
+
+function removeSelected(i) {
+  selected.value.splice(i, 1)
+}
+
+function confirmAdd() {
+  emits('confirm', [...selected.value])
   selected.value = []
 }
 </script>

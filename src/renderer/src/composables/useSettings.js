@@ -1,5 +1,6 @@
 import { ref, computed, watch } from 'vue'
 import { soothingPrinterSound } from '../utils/utils.js'
+import { runQuery } from '../utils/api.js'
 
 export const showSettings = ref(false)
 
@@ -17,11 +18,13 @@ const settings = ref({
   created_at: null
 })
 
+const currentUser = ref(null)
+
 const now = ref(new Date())
 
 const isLoaded = ref(false)
 
-export function useSettings() {
+export function useSettings(silentErrors = false) {
   // Date/Time format options
   setInterval(() => {
     now.value = new Date()
@@ -181,7 +184,7 @@ export function useSettings() {
   // Load settings from database
   const loadSettings = async () => {
     try {
-      const dbSettings = await window.api.getSettings()
+      const dbSettings = await runQuery(window.api.getSettings, silentErrors)
       if (dbSettings) {
         settings.value = { ...settings.value, ...dbSettings }
 
@@ -195,6 +198,10 @@ export function useSettings() {
     } catch (error) {
       console.error('Failed to load settings:', error)
     }
+  }
+
+  const closeSettings = () => {
+    showSettings.value = false
   }
 
   // Save settings to database
@@ -264,6 +271,22 @@ export function useSettings() {
     }
   )
 
+  const getCurrentUser = async () => {
+    try {
+      const user = await window.api.getMe()
+      if (user) {
+        currentUser.value = { ...user }
+      }
+    } catch (error) {
+      console.error('Failed to fetch current user:', error)
+    }
+  }
+
+  const refreshSettingsAndUser = async () => {
+    await loadSettings()
+    await getCurrentUser()
+  }
+
   // Listen for system theme changes
   if (typeof window !== 'undefined') {
     // eslint-disable-next-line no-unused-vars
@@ -278,6 +301,7 @@ export function useSettings() {
     // State
     settings,
     isLoaded,
+    currentUser,
 
     // Computed
     dateTimeOptions,
@@ -289,8 +313,11 @@ export function useSettings() {
     loadSettings,
     saveSettings,
     updateSetting,
+    closeSettings,
     formatDate,
     applyTheme,
-    playSoundIfEnabled
+    playSoundIfEnabled,
+    getCurrentUser,
+    refreshSettingsAndUser
   }
 }
