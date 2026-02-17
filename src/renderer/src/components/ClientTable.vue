@@ -59,7 +59,9 @@
         <!-- Results count and Bulk Actions -->
         <div class="mt-3 flex items-center justify-between">
           <div class="text-sm text-gray-600 dark:text-gray-400">
-            {{ sortedData.length }} {{ sortedData.length === 1 ? 'client' : 'clients' }} found
+            <Badge :mode="sortedData.length <= 0 ? 'danger' : 'info'"
+              >Clients: {{ sortedData.length }}</Badge
+            >
             <span
               v-if="selected.length > 0"
               class="ml-2 text-blue-600 dark:text-blue-400 font-medium"
@@ -451,8 +453,10 @@ import { ref, computed, readonly, defineExpose, onMounted, onUnmounted } from 'v
 import { useRouter } from 'vue-router'
 import MoreMenu from './MoreMenu.vue'
 import AddNewClient from '../pages/AddNewClient.vue'
+import Badge from '../components/Badge.vue'
 import { useAlerts } from '../composables/useAlerts.js'
 import { useConfirm } from '../composables/useConfirm.js'
+import { useQueueCount } from '../composables/useQueueCount.js'
 
 defineEmits(['refresh'])
 
@@ -478,6 +482,8 @@ const sortConfig = ref({ key: null, direction: 'asc' })
 const searchQuery = ref('')
 
 const searchInput = ref(null)
+
+const { getQueueCount } = useQueueCount()
 
 /* =========================================================
  * Keyboard Shortcuts
@@ -598,16 +604,18 @@ const loadClients = async () => {
  * Single Client Actions
  * ========================================================= */
 const sendToQueue = async (client) => {
+  console.log(client)
   try {
     const count = await window.api.countClientLabels(client)
     if (count <= 0) return alerts.error('Client label is empty')
 
-    await window.api.sendToQueue(client)
+    await window.api.sendClientLabelsToQueue(client)
     alerts.success('Sent to queue successfully')
   } catch (error) {
     console.error(error)
     alerts.error('Failed to send client to queue')
   }
+  await getQueueCount()
 }
 
 const printLabels = async (client) => {
@@ -662,7 +670,7 @@ const bulkSendToQueue = async () => {
     try {
       const count = await window.api.countClientLabels(id)
       if (count > 0) {
-        await window.api.sendToQueue(id)
+        await window.api.sendClientLabelsToQueue(id)
         success++
       } else fail++
     } catch {
@@ -673,6 +681,7 @@ const bulkSendToQueue = async () => {
   success && alerts.success(`${success} client(s) sent to queue`)
   fail && alerts.error(`${fail} client(s) failed`)
   selected.value = []
+  await getQueueCount()
 }
 
 const bulkPrintLabels = async () => {

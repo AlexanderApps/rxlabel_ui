@@ -1,11 +1,7 @@
 <template>
   <div class="w-full h-full dark:bg-gray-900 dark:text-white">
     <div class="grid grid-rows-[3.5rem_1fr] h-full">
-      <Header
-        title="Clients"
-        :badge-label="`Clients: ${clientCount}`"
-        :badge-mode="clientCount <= 0 ? 'danger' : 'info'"
-      >
+      <Header title="Clients" :badge-label="`Queue: ${queueCount}`" :badge-mode="badgeType">
         <template #actions>
           <button
             class="p-2 rounded-lg bg-gray-200/60 dark:bg-gray-700 hover:bg-gray-300 transition-colors text-gray-700 dark:text-gray-300 dark:hover:bg-gray-600"
@@ -65,6 +61,7 @@ import { useAlerts } from '../composables/useAlerts.js'
 import Header from '../components/Header.vue'
 import GlobalMoreMenu from '../components/GlobalMoreMenu.vue'
 import ClientTable from '../components/ClientTable.vue'
+import { useQueueCount } from '../composables/useQueueCount.js'
 // import { useConfirm } from '../composables/useConfirm.js'
 
 // const { confirm } = useConfirm()
@@ -73,6 +70,7 @@ const clientCount = ref(0)
 const alerts = useAlerts()
 const isRefreshing = ref(false)
 const clientsRef = ref(null)
+const { queueCount, badgeType, getQueueCount } = useQueueCount()
 
 // const confirmClearQueue = async () => {
 //   if (await confirm('Clear the entire queue?')) {
@@ -123,6 +121,7 @@ const fetchclientCount = async () => {
 const refresh = async () => {
   clientsRef.value.refresh()
   await fetchclientCount()
+  await getQueueCount()
 }
 
 const refreshClients = async () => {
@@ -141,7 +140,7 @@ function goToQueue() {
   router.push({ name: 'MedicationLabelQueue' })
 }
 
-onMounted(() => {
+onMounted(async () => {
   refresh()
 })
 </script>

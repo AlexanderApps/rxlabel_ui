@@ -88,6 +88,10 @@
   </div>
 </template>
 <script setup>
+import { computed, onMounted } from 'vue'
+import { generalStats } from '../../composables/useAdmin'
+import { timeAgo } from '../../utils/utils'
+
 const generalSettings = [
   { id: 1, label: 'Auto-Save', description: 'Automatically save changes', enabled: true },
   {
@@ -116,10 +120,19 @@ const generalSettings = [
   }
 ]
 
-const systemInfo = [
-  { label: 'Version', value: 'v2.5.1' },
-  { label: 'Database', value: 'SQLite 3.36' },
-  { label: 'Last Backup', value: '2 hours ago' },
-  { label: 'Storage Used', value: '2.3 GB / 10 GB' }
-]
+const systemInfo = computed(() => {
+  return [
+    { label: 'Version', value: `v${generalStats.value.app_version || 'Unknown'}` },
+    {
+      label: 'Database',
+      value: `SQLite ${generalStats.value.diagnostics.software.sqlite || 'Unknown'}`
+    },
+    { label: 'Last Backup', value: timeAgo(generalStats.value.last_backup_date) },
+    { label: 'Storage Used', value: '2.3 GB / 10 GB' }
+  ]
+})
+
+onMounted(() => {
+  console.log(generalStats)
+})
 </script>

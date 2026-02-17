@@ -118,8 +118,9 @@ const printQueue = async () => {
     playSoundIfEnabled()
 
     const jobList = JSON.parse(JSON.stringify(Object.values(labelModels)))
+    const modJobList = jobList.map((j) => ({ ...j, timestamp: formattedDate.value }))
 
-    await window.api.printerPrint(jobList)
+    await window.api.printerPrint(modJobList)
 
     alerts.success('Print jobs sent for all labels in the queue.')
   }
@@ -162,7 +163,7 @@ const clearQueue = async () => {
 
 const printLabel = async (id) => {
   playSoundIfEnabled()
-  await window.api.printerPrint({ ...labelModels[id] })
+  await window.api.printerPrint({ ...labelModels[id], timestamp: formattedDate.value })
   alerts.error('Print functionality not implemented.')
 }
 

@@ -75,7 +75,7 @@
         </thead>
         <tbody class="divide-y divide-slate-200 dark:divide-slate-700">
           <tr
-            v-for="user in users"
+            v-for="user in curUsers"
             :key="user.id"
             class="hover:bg-slate-50 dark:hover:bg-slate-700/30 transition-colors"
           >
@@ -155,71 +155,52 @@
 </template>
 
 <script setup>
-const users = [
-  {
-    id: 1,
-    name: 'John Doe',
-    email: 'john@rxlabel.com',
-    initials: 'JD',
-    role: 'Admin',
-    roleColor: 'bg-violet-100 text-violet-700 dark:bg-violet-900/30 dark:text-violet-400',
-    status: 'Active',
-    statusColor: 'text-emerald-600 dark:text-emerald-400',
-    statusDot: 'bg-emerald-500',
-    lastActive: '2 min ago',
-    avatarColor: 'bg-gradient-to-br from-blue-500 to-cyan-600'
-  },
-  {
-    id: 2,
-    name: 'Sarah Miller',
-    email: 'sarah@rxlabel.com',
-    initials: 'SM',
-    role: 'Pharmacist',
-    roleColor: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400',
-    status: 'Active',
-    statusColor: 'text-emerald-600 dark:text-emerald-400',
-    statusDot: 'bg-emerald-500',
-    lastActive: '15 min ago',
-    avatarColor: 'bg-gradient-to-br from-violet-500 to-purple-600'
-  },
-  {
-    id: 3,
-    name: 'Robert Johnson',
-    email: 'robert@rxlabel.com',
-    initials: 'RJ',
-    role: 'Technician',
-    roleColor: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400',
-    status: 'Active',
-    statusColor: 'text-emerald-600 dark:text-emerald-400',
-    statusDot: 'bg-emerald-500',
-    lastActive: '1 hour ago',
-    avatarColor: 'bg-gradient-to-br from-emerald-500 to-teal-600'
-  },
-  {
-    id: 4,
-    name: 'Emily White',
-    email: 'emily@rxlabel.com',
-    initials: 'EW',
-    role: 'Pharmacist',
-    roleColor: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400',
-    status: 'Offline',
-    statusColor: 'text-slate-500 dark:text-slate-400',
-    statusDot: 'bg-slate-400',
-    lastActive: '3 hours ago',
-    avatarColor: 'bg-gradient-to-br from-pink-500 to-rose-600'
-  },
-  {
-    id: 5,
-    name: 'Michael Brown',
-    email: 'michael@rxlabel.com',
-    initials: 'MB',
-    role: 'Admin',
-    roleColor: 'bg-violet-100 text-violet-700 dark:bg-violet-900/30 dark:text-violet-400',
-    status: 'Active',
-    statusColor: 'text-emerald-600 dark:text-emerald-400',
-    statusDot: 'bg-emerald-500',
-    lastActive: '5 min ago',
-    avatarColor: 'bg-gradient-to-br from-amber-500 to-orange-600'
-  }
-]
+import { computed, onMounted } from 'vue'
+import { useAdmin, users } from '../../composables/useAdmin'
+
+const { getUsers } = useAdmin()
+
+const curUsers = computed(() => {
+  return users.value.map((user, index) => {
+    // 1. Logic for dynamic Role Colors
+    const roleConfig = {
+      admin: 'bg-violet-100 text-violet-700 dark:bg-violet-900/30 dark:text-violet-400',
+      manager: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400',
+      user: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400'
+    }
+
+    // 2. Logic for dynamic Avatar Gradients
+    const avatarGradients = {
+      admin: 'bg-gradient-to-br from-blue-500 to-cyan-600',
+      manager: 'bg-gradient-to-br from-violet-500 to-purple-600',
+      user: 'bg-gradient-to-br from-emerald-500 to-teal-600'
+    }
+
+    // 3. Extract Initials (e.g., "John Doe" -> "JD")
+    const initials = user.name
+      .split(' ')
+      .map((n) => n[0])
+      .join('')
+      .toUpperCase()
+
+    return {
+      id: user.id || index + 1,
+      name: user.name,
+      email: user.email,
+      initials: initials,
+      role: user.role,
+      roleColor: roleConfig[user.role] || roleConfig['user'],
+      status: 'Active',
+      statusColor: 'text-emerald-600 dark:text-emerald-400',
+      statusDot: 'bg-emerald-500',
+      lastActive: user.lastActive || 'Just now',
+      avatarColor: avatarGradients[user.role] || avatarGradients['user']
+    }
+  })
+})
+
+onMounted(async () => {
+  await getUsers()
+  console.log(users.value)
+})
 </script>

@@ -179,8 +179,262 @@
                         v-for="theme in ['light', 'dark', 'system']"
                         :key="theme"
                         :class="[
+                          'relative flex flex-1 flex-col items-center justify-center px-4 py-4 gap-3 rounded-xl border-2 transition-all duration-200 select-none group overflow-hidden',
+                          currentTheme === theme
+                            ? 'border-blue-500 bg-gradient-to-br from-blue-50 to-blue-100/50 dark:from-blue-950 dark:to-blue-900/30 shadow-lg shadow-blue-500/20'
+                            : 'border-gray-200 dark:border-gray-700 hover:border-blue-300 dark:hover:border-blue-600 hover:shadow-md'
+                        ]"
+                        @click="applyTheme(theme)"
+                      >
+                        <!-- Animated background gradient -->
+                        <div
+                          v-if="currentTheme === theme"
+                          class="absolute inset-0 bg-gradient-to-br from-blue-400/10 to-purple-400/10 dark:from-blue-500/10 dark:to-purple-500/10 animate-pulse"
+                        ></div>
+
+                        <!-- Window Icon -->
+                        <svg
+                          v-if="theme === 'light'"
+                          class="relative z-10 transition-transform group-hover:scale-110"
+                          width="40"
+                          height="40"
+                          viewBox="0 0 48 48"
+                          fill="none"
+                          xmlns="http://www.w3.org/2000/svg"
+                        >
+                          <!-- Window frame -->
+                          <rect
+                            x="6"
+                            y="8"
+                            width="36"
+                            height="32"
+                            rx="3"
+                            fill="#ffffff"
+                            stroke="currentColor"
+                            stroke-width="2"
+                          />
+                          <!-- Title bar -->
+                          <rect
+                            x="6"
+                            y="8"
+                            width="36"
+                            height="8"
+                            rx="3"
+                            fill="currentColor"
+                            opacity="0.1"
+                          />
+                          <!-- Window controls -->
+                          <circle
+                            cx="11"
+                            cy="12"
+                            r="1.5"
+                            :fill="currentTheme === theme ? '#EF4444' : '#94A3B8'"
+                          />
+                          <circle
+                            cx="16"
+                            cy="12"
+                            r="1.5"
+                            :fill="currentTheme === theme ? '#F59E0B' : '#94A3B8'"
+                          />
+                          <circle
+                            cx="21"
+                            cy="12"
+                            r="1.5"
+                            :fill="currentTheme === theme ? '#10B981' : '#94A3B8'"
+                          />
+                          <!-- Sun rays -->
+                          <circle cx="24" cy="26" r="5" fill="#FCD34D" />
+                          <line
+                            x1="24"
+                            y1="16"
+                            x2="24"
+                            y2="14"
+                            stroke="#FCD34D"
+                            stroke-width="2"
+                            stroke-linecap="round"
+                          />
+                          <line
+                            x1="24"
+                            y1="38"
+                            x2="24"
+                            y2="36"
+                            stroke="#FCD34D"
+                            stroke-width="2"
+                            stroke-linecap="round"
+                          />
+                          <line
+                            x1="32"
+                            y1="26"
+                            x2="34"
+                            y2="26"
+                            stroke="#FCD34D"
+                            stroke-width="2"
+                            stroke-linecap="round"
+                          />
+                          <line
+                            x1="14"
+                            y1="26"
+                            x2="16"
+                            y2="26"
+                            stroke="#FCD34D"
+                            stroke-width="2"
+                            stroke-linecap="round"
+                          />
+                        </svg>
+
+                        <svg
+                          v-if="theme === 'dark'"
+                          class="relative z-10 transition-transform group-hover:scale-110"
+                          width="40"
+                          height="40"
+                          viewBox="0 0 48 48"
+                          fill="none"
+                          xmlns="http://www.w3.org/2000/svg"
+                        >
+                          <!-- Window frame -->
+                          <rect
+                            x="6"
+                            y="8"
+                            width="36"
+                            height="32"
+                            rx="3"
+                            fill="#1E293B"
+                            stroke="currentColor"
+                            stroke-width="2"
+                          />
+                          <!-- Title bar -->
+                          <rect
+                            x="6"
+                            y="8"
+                            width="36"
+                            height="8"
+                            rx="3"
+                            fill="currentColor"
+                            opacity="0.2"
+                          />
+                          <!-- Window controls -->
+                          <circle
+                            cx="11"
+                            cy="12"
+                            r="1.5"
+                            :fill="currentTheme === theme ? '#EF4444' : '#475569'"
+                          />
+                          <circle
+                            cx="16"
+                            cy="12"
+                            r="1.5"
+                            :fill="currentTheme === theme ? '#F59E0B' : '#475569'"
+                          />
+                          <circle
+                            cx="21"
+                            cy="12"
+                            r="1.5"
+                            :fill="currentTheme === theme ? '#10B981' : '#475569'"
+                          />
+                          <!-- Moon and stars -->
+                          <path d="M20 26a6 6 0 0 0 8 0 6 6 0 1 1-8 0Z" fill="#93C5FD" />
+                          <circle cx="32" cy="20" r="1" fill="#FCD34D" />
+                          <circle cx="35" cy="24" r="1" fill="#FCD34D" />
+                          <circle cx="34" cy="31" r="1" fill="#FCD34D" />
+                        </svg>
+
+                        <svg
+                          v-if="theme === 'system'"
+                          class="relative z-10 transition-transform group-hover:scale-110"
+                          width="40"
+                          height="40"
+                          viewBox="0 0 48 48"
+                          fill="none"
+                          xmlns="http://www.w3.org/2000/svg"
+                        >
+                          <!-- Split window frame -->
+                          <rect
+                            x="6"
+                            y="8"
+                            width="36"
+                            height="32"
+                            rx="3"
+                            fill="url(#gradient-split)"
+                            stroke="currentColor"
+                            stroke-width="2"
+                          />
+                          <defs>
+                            <linearGradient id="gradient-split" x1="0%" y1="0%" x2="100%" y2="0%">
+                              <stop offset="50%" stop-color="#ffffff" />
+                              <stop offset="50%" stop-color="#1E293B" />
+                            </linearGradient>
+                          </defs>
+                          <!-- Title bar -->
+                          <rect
+                            x="6"
+                            y="8"
+                            width="36"
+                            height="8"
+                            rx="3"
+                            fill="currentColor"
+                            opacity="0.15"
+                          />
+                          <!-- Window controls -->
+                          <circle
+                            cx="11"
+                            cy="12"
+                            r="1.5"
+                            :fill="currentTheme === theme ? '#EF4444' : '#64748B'"
+                          />
+                          <circle
+                            cx="16"
+                            cy="12"
+                            r="1.5"
+                            :fill="currentTheme === theme ? '#F59E0B' : '#64748B'"
+                          />
+                          <circle
+                            cx="21"
+                            cy="12"
+                            r="1.5"
+                            :fill="currentTheme === theme ? '#10B981' : '#64748B'"
+                          />
+                          <!-- Sun (left half) -->
+                          <circle cx="17" cy="26" r="4" fill="#FCD34D" />
+                          <line
+                            x1="17"
+                            y1="18"
+                            x2="17"
+                            y2="16"
+                            stroke="#FCD34D"
+                            stroke-width="1.5"
+                            stroke-linecap="round"
+                          />
+                          <!-- Moon (right half) -->
+                          <path d="M27 26a5 5 0 0 0 6 0 5 5 0 1 1-6 0Z" fill="#93C5FD" />
+                          <circle cx="35" cy="21" r="0.8" fill="#FCD34D" />
+                        </svg>
+
+                        <!-- Label -->
+                        <span
+                          :class="[
+                            'relative z-10 text-sm font-semibold capitalize transition-colors',
+                            currentTheme === theme
+                              ? 'text-blue-700 dark:text-blue-400'
+                              : 'text-gray-600 dark:text-gray-400'
+                          ]"
+                        >
+                          {{ theme }}
+                        </span>
+
+                        <!-- Active indicator -->
+                        <div
+                          v-if="currentTheme === theme"
+                          class="absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-blue-500 to-purple-500"
+                        ></div>
+                      </button>
+                    </div>
+                    <!-- <div class="flex gap-3">
+                      <button
+                        v-for="theme in ['light', 'dark', 'system']"
+                        :key="theme"
+                        :class="[
                           'flex flex-1 px-4 py-3 gap-4 item-center rounded-lg border-2 transition-all capitalize select-none',
-                          settings.theme === theme
+                          currentTheme === theme
                             ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400'
                             : 'border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600'
                         ]"
@@ -224,7 +478,7 @@
                         </svg>
                         {{ theme }}
                       </button>
-                    </div>
+                    </div> -->
                   </div>
 
                   <div>
@@ -451,10 +705,257 @@
                   Privacy & Security
                 </h3>
 
-                <div class="space-y-4">
-                  <p class="text-sm text-gray-600 dark:text-gray-400">
-                    Privacy and security settings will be available in future updates.
-                  </p>
+                <div class="h-90 space-y-6 overflow-auto pr-4 pl-1 pb-12 custom-scrollbar">
+                  <!-- Change Password Section -->
+                  <div
+                    class="bg-white dark:bg-gray-800 rounded-lg p-6 border border-gray-200 dark:border-gray-700"
+                  >
+                    <h4 class="text-base font-semibold text-gray-900 dark:text-white mb-4">
+                      Change Password
+                    </h4>
+
+                    <form @submit.prevent="handleChangePassword" class="space-y-4">
+                      <!-- Current Password -->
+                      <div>
+                        <label
+                          class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+                        >
+                          Current Password
+                        </label>
+                        <div class="relative">
+                          <input
+                            v-model="passwordForm.currentPassword"
+                            :type="showCurrentPassword ? 'text' : 'password'"
+                            class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg outline-0 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                            placeholder="Enter current password"
+                            required
+                          />
+                          <button
+                            type="button"
+                            class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+                            @click="showCurrentPassword = !showCurrentPassword"
+                          >
+                            <svg
+                              v-if="!showCurrentPassword"
+                              class="w-5 h-5"
+                              fill="none"
+                              stroke="currentColor"
+                              viewBox="0 0 24 24"
+                            >
+                              <path
+                                stroke-linecap="round"
+                                stroke-linejoin="round"
+                                stroke-width="2"
+                                d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
+                              />
+                              <path
+                                stroke-linecap="round"
+                                stroke-linejoin="round"
+                                stroke-width="2"
+                                d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"
+                              />
+                            </svg>
+                            <svg
+                              v-else
+                              class="w-5 h-5"
+                              fill="none"
+                              stroke="currentColor"
+                              viewBox="0 0 24 24"
+                            >
+                              <path
+                                stroke-linecap="round"
+                                stroke-linejoin="round"
+                                stroke-width="2"
+                                d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21"
+                              />
+                            </svg>
+                          </button>
+                        </div>
+                      </div>
+
+                      <!-- New Password -->
+                      <div>
+                        <label
+                          class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+                        >
+                          New Password
+                        </label>
+                        <div class="relative">
+                          <input
+                            v-model="passwordForm.newPassword"
+                            :type="showNewPassword ? 'text' : 'password'"
+                            class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg outline-0 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                            placeholder="Enter new password"
+                            required
+                            minlength="8"
+                          />
+                          <button
+                            type="button"
+                            class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+                            @click="showNewPassword = !showNewPassword"
+                          >
+                            <svg
+                              v-if="!showNewPassword"
+                              class="w-5 h-5"
+                              fill="none"
+                              stroke="currentColor"
+                              viewBox="0 0 24 24"
+                            >
+                              <path
+                                stroke-linecap="round"
+                                stroke-linejoin="round"
+                                stroke-width="2"
+                                d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
+                              />
+                              <path
+                                stroke-linecap="round"
+                                stroke-linejoin="round"
+                                stroke-width="2"
+                                d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"
+                              />
+                            </svg>
+                            <svg
+                              v-else
+                              class="w-5 h-5"
+                              fill="none"
+                              stroke="currentColor"
+                              viewBox="0 0 24 24"
+                            >
+                              <path
+                                stroke-linecap="round"
+                                stroke-linejoin="round"
+                                stroke-width="2"
+                                d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21"
+                              />
+                            </svg>
+                          </button>
+                        </div>
+                        <!-- Password strength indicator -->
+                        <div class="mt-2">
+                          <div class="flex gap-1">
+                            <div
+                              v-for="i in 4"
+                              :key="i"
+                              class="h-1 flex-1 rounded-full transition-colors"
+                              :class="
+                                i <= passwordStrength
+                                  ? getStrengthColor(passwordStrength)
+                                  : 'bg-gray-200 dark:bg-gray-600'
+                              "
+                            ></div>
+                          </div>
+                          <p class="text-xs mt-1" :class="getStrengthTextColor(passwordStrength)">
+                            {{ getStrengthLabel(passwordStrength) }}
+                          </p>
+                        </div>
+                      </div>
+
+                      <!-- Confirm New Password -->
+                      <div>
+                        <label
+                          class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+                        >
+                          Confirm New Password
+                        </label>
+                        <div class="relative">
+                          <input
+                            v-model="passwordForm.confirmPassword"
+                            :type="showConfirmPassword ? 'text' : 'password'"
+                            class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg outline-0 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                            placeholder="Confirm new password"
+                            required
+                          />
+                          <button
+                            type="button"
+                            class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+                            @click="showConfirmPassword = !showConfirmPassword"
+                          >
+                            <svg
+                              v-if="!showConfirmPassword"
+                              class="w-5 h-5"
+                              fill="none"
+                              stroke="currentColor"
+                              viewBox="0 0 24 24"
+                            >
+                              <path
+                                stroke-linecap="round"
+                                stroke-linejoin="round"
+                                stroke-width="2"
+                                d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
+                              />
+                              <path
+                                stroke-linecap="round"
+                                stroke-linejoin="round"
+                                stroke-width="2"
+                                d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"
+                              />
+                            </svg>
+                            <svg
+                              v-else
+                              class="w-5 h-5"
+                              fill="none"
+                              stroke="currentColor"
+                              viewBox="0 0 24 24"
+                            >
+                              <path
+                                stroke-linecap="round"
+                                stroke-linejoin="round"
+                                stroke-width="2"
+                                d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21"
+                              />
+                            </svg>
+                          </button>
+                        </div>
+                        <p
+                          v-if="
+                            passwordForm.newPassword &&
+                            passwordForm.confirmPassword &&
+                            !passwordsMatch
+                          "
+                          class="text-xs text-red-600 dark:text-red-400 mt-1"
+                        >
+                          Passwords do not match
+                        </p>
+                      </div>
+
+                      <!-- Error/Success Messages -->
+                      <div
+                        v-if="passwordChangeError"
+                        class="p-3 rounded-lg bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800"
+                      >
+                        <p class="text-sm text-red-600 dark:text-red-400">
+                          {{ passwordChangeError }}
+                        </p>
+                      </div>
+
+                      <div
+                        v-if="passwordChangeSuccess"
+                        class="p-3 rounded-lg bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800"
+                      >
+                        <p class="text-sm text-green-600 dark:text-green-400">
+                          {{ passwordChangeSuccess }}
+                        </p>
+                      </div>
+
+                      <!-- Action Buttons -->
+                      <div class="flex gap-3 pt-2">
+                        <button
+                          type="submit"
+                          :disabled="!isPasswordFormValid || isChangingPassword"
+                          class="px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white rounded-lg font-medium transition-colors disabled:cursor-not-allowed"
+                        >
+                          {{ isChangingPassword ? 'Changing...' : 'Change Password' }}
+                        </button>
+                        <button
+                          type="button"
+                          class="px-4 py-2 bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 rounded-lg font-medium transition-colors"
+                          @click="resetPasswordForm"
+                        >
+                          Cancel
+                        </button>
+                      </div>
+                    </form>
+                  </div>
                 </div>
               </div>
 
@@ -661,106 +1162,13 @@
   </Teleport>
 </template>
 
-<!-- <script setup>
-import { ref, onMounted, toRaw } from 'vue'
-import { useSettings } from '../composables/useSettings'
-
-const {
-  settings,
-  dateTimeOptions,
-  currentUser,
-  // saveSettings: saveToDb,
-  // applyTheme,
-  refreshSettingsAndUser
-} = useSettings(true)
-
-defineProps({
-  show: {
-    type: Boolean,
-    default: false
-  },
-  initialSettings: {
-    type: Object,
-    default: () => ({})
-  }
-})
-
-const emit = defineEmits(['close', 'save'])
-
-const activeTab = ref('appearance')
-
-const tabs = [
-  { id: 'appearance', label: 'Appearance', icon: 'palette' },
-  { id: 'user', label: 'User Profile', icon: 'user' },
-  { id: 'label', label: 'Label Settings', icon: 'tag' },
-  { id: 'notifications', label: 'Notifications', icon: 'bell' },
-  { id: 'privacy', label: 'Privacy', icon: 'shield' },
-  { id: 'help', label: 'Help', icon: 'help' }
-]
-
-// const settingsOriginal = reactive({})
-
-// Generate date/time format options
-
-const applyTheme = (theme) => {
-  settings.theme = theme
-
-  if (theme === 'dark') {
-    document.documentElement.classList.add('dark')
-  } else if (theme === 'light') {
-    document.documentElement.classList.remove('dark')
-  } else if (theme === 'system') {
-    if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
-      document.documentElement.classList.add('dark')
-    } else {
-      document.documentElement.classList.remove('dark')
-    }
-  }
-}
-
-const saveSettings = async () => {
-  // Apply theme before saving
-  // applyTheme(settings.theme)
-  console.log({ ...settings.value })
-
-  await window.api.saveSettings(toRaw({ ...settings.value }))
-  // console.log(toRaw({ ...settings.value }))
-
-  // Emit settings to parent component
-  // emit('save', {})
-  closeModal()
-}
-
-const closeModal = () => {
-  emit('close')
-}
-
-onMounted(async () => {
-  // Fetch current user
-  // Fetch settings from database
-  // const dbSettings = await window.api.getSettings()
-
-  await refreshSettingsAndUser()
-
-  // Merge DB settings into reactive settings object
-  // if (dbSettings) {
-  //   Object.assign(settings, dbSettings)
-  //   Object.assign(settingsOriginal, dbSettings)
-  // }
-
-  // Apply current theme on mount
-  if (settings.theme) {
-    applyTheme(settings.theme)
-  }
-})
-</script> -->
-
 <script setup>
-import { ref, watch, nextTick, onUnmounted, toRaw, onMounted } from 'vue'
+import { ref, reactive, computed, watch, nextTick, onUnmounted, toRaw, onMounted } from 'vue'
 import { useSettings } from '../composables/useSettings'
 import ShortcutSection from '../components/ShortcutSection.vue'
 
-const { settings, dateTimeOptions, currentUser, refreshSettingsAndUser } = useSettings(true)
+const { settings, dateTimeOptions, currentUser, currentTheme, refreshSettingsAndUser, applyTheme } =
+  useSettings(true)
 
 /* ---------------- props / emits ---------------- */
 
@@ -791,20 +1199,48 @@ const tabs = [
   { id: 'help', label: 'Help', icon: 'help' }
 ]
 
-/* ---------------- theme ---------------- */
+const passwordForm = reactive({
+  currentPassword: '',
+  newPassword: '',
+  confirmPassword: ''
+})
 
-const applyTheme = (theme) => {
-  settings.theme = theme
+const showCurrentPassword = ref(false)
+const showNewPassword = ref(false)
+const showConfirmPassword = ref(false)
+const isChangingPassword = ref(false)
+const passwordChangeError = ref('')
+const passwordChangeSuccess = ref('')
 
-  if (theme === 'dark') {
-    document.documentElement.classList.add('dark')
-  } else if (theme === 'light') {
-    document.documentElement.classList.remove('dark')
-  } else {
-    const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches
-    document.documentElement.classList.toggle('dark', prefersDark)
-  }
-}
+/* ---------------- computed properties ---------------- */
+
+const passwordStrength = computed(() => {
+  const password = passwordForm.newPassword
+  if (!password) return 0
+
+  let strength = 0
+
+  // Length check
+  if (password.length >= 8) strength++
+  if (password.length >= 12) strength++
+
+  // Complexity checks
+  if (/[a-z]/.test(password) && /[A-Z]/.test(password)) strength++
+  if (/\d/.test(password)) strength++
+  if (/[^a-zA-Z0-9]/.test(password)) strength++
+
+  return Math.min(strength, 4)
+})
+
+const passwordsMatch = computed(() => {
+  return passwordForm.newPassword === passwordForm.confirmPassword
+})
+
+const isPasswordFormValid = computed(() => {
+  return (
+    passwordForm.currentPassword && passwordForm.newPassword.length >= 8 && passwordsMatch.value
+  )
+})
 
 /* ---------------- focus trap ---------------- */
 
@@ -837,16 +1273,23 @@ function handleKeydown(e) {
   }
 }
 
-const globalShortcuts = [
-  { keys: ['Esc'], action: 'Close active modals' },
-  { keys: ['Ctrl', ','], action: 'Open settings' },
-  { keys: ['Ctrl', 'J'], action: 'Navigate to Queue page' },
-  { keys: ['Ctrl', 'D'], action: 'Navigate to Clients page' },
-  { keys: ['Ctrl', 'B'], action: 'Navigate to Labels page' },
-  { keys: ['Ctrl', 'G'], action: 'Navigate to Users page' },
-  { keys: ['Ctrl', 'Shift', 'A'], action: 'Open Admin Console' },
-  { keys: ['Ctrl', 'L'], action: 'Logout' }
-]
+const globalShortcuts = computed(() => {
+  let globs = [
+    { keys: ['Esc'], action: 'Close active modals' },
+    { keys: ['Ctrl', ','], action: 'Open settings' },
+    { keys: ['Ctrl', 'J'], action: 'Navigate to Queue page' },
+    { keys: ['Ctrl', 'D'], action: 'Navigate to Clients page' },
+    { keys: ['Ctrl', 'B'], action: 'Navigate to Labels page' },
+    { keys: ['Ctrl', 'L'], action: 'Logout' }
+  ]
+  if (['manager', 'admin'].includes(currentUser.value?.role)) {
+    globs.push({ keys: ['Ctrl', 'U'], action: 'Navigate to Users page' })
+  }
+  if (currentUser.value?.role === 'admin') {
+    globs.push({ keys: ['Ctrl', 'Shift', 'A'], action: 'Open Admin Console' })
+  }
+  return globs
+})
 
 const labelPageShortcuts = [
   { keys: ['Ctrl', 'K'], action: 'Focus label search input' },
@@ -861,14 +1304,83 @@ const queuePageShortcuts = [
 
 const clientPageShortcuts = [
   { keys: ['Ctrl', 'K'], action: 'Focus client details search field' },
-  { keys: ['Ctrl', 'N'], action: 'Add new client' }
+  { keys: ['Ctrl', 'N'], action: 'Add new client' },
+  { keys: ['Ctrl', '⬅'], action: 'View previous clients page in the list' },
+  { keys: ['Ctrl', '➡'], action: 'View next clients page in the list' }
 ]
 
 const userPageShortcuts = [
   { keys: ['Ctrl', 'K'], action: 'Focus user details search field' },
-  { keys: ['Ctrl', 'N'], action: 'Add new user' }
+  { keys: ['Ctrl', 'N'], action: 'Add new user' },
+  { keys: ['Ctrl', '⬅'], action: 'View previous users page in the list' },
+  { keys: ['Ctrl', '➡'], action: 'View next users page in the list' }
 ]
 
+// ---------------------------------------------------------
+
+// Methods
+const getStrengthColor = (strength) => {
+  const colors = ['', 'bg-red-500', 'bg-yellow-500', 'bg-blue-500', 'bg-green-500']
+  return colors[strength] || ''
+}
+
+const getStrengthTextColor = (strength) => {
+  const colors = [
+    '',
+    'text-red-600 dark:text-red-400',
+    'text-yellow-600 dark:text-yellow-400',
+    'text-blue-600 dark:text-blue-400',
+    'text-green-600 dark:text-green-400'
+  ]
+  return colors[strength] || ''
+}
+
+const getStrengthLabel = (strength) => {
+  const labels = ['', 'Weak', 'Fair', 'Good', 'Strong']
+  return labels[strength] || ''
+}
+
+const handleChangePassword = async () => {
+  passwordChangeError.value = ''
+  passwordChangeSuccess.value = ''
+  isChangingPassword.value = true
+
+  try {
+    const result = await window.api.changeUserPassword({
+      currentPassword: passwordForm.currentPassword,
+      newPassword: passwordForm.newPassword
+    })
+
+    console.log(result)
+
+    if (result.success) {
+      passwordChangeSuccess.value = 'Password changed successfully!'
+      resetPasswordForm()
+
+      // Clear success message after 3 seconds
+      setTimeout(() => {
+        passwordChangeSuccess.value = ''
+      }, 3000)
+    } else {
+      passwordChangeError.value = result.error || 'Failed to change password'
+    }
+  } catch (error) {
+    passwordChangeError.value = 'An error occurred. Please try again.'
+    console.error('Password change error:', error)
+  } finally {
+    isChangingPassword.value = false
+  }
+}
+
+const resetPasswordForm = () => {
+  passwordForm.currentPassword = ''
+  passwordForm.newPassword = ''
+  passwordForm.confirmPassword = ''
+  showCurrentPassword.value = false
+  showNewPassword.value = false
+  showConfirmPassword.value = false
+  passwordChangeError.value = ''
+}
 /* ---------------- lifecycle ---------------- */
 
 watch(
@@ -886,8 +1398,16 @@ watch(
   }
 )
 
+watch(
+  () => passwordForm.currentPassword,
+  () => {
+    passwordChangeError.value = ''
+  }
+)
+
 onUnmounted(() => {
   window.removeEventListener('keydown', handleKeydown)
+  applyTheme(currentTheme.value)
 })
 
 /* ---------------- actions ---------------- */
@@ -905,7 +1425,8 @@ const closeModal = () => {
 
 onMounted(async () => {
   await refreshSettingsAndUser()
-  if (settings.theme) applyTheme(settings.theme)
+  console.log(currentTheme.value)
+  if (currentTheme.value) applyTheme(currentTheme.value)
 })
 </script>
 

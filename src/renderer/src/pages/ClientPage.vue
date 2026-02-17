@@ -53,7 +53,9 @@
                 </button>
               </template>
             </MoreMenu> -->
-            <GlobalMoreMenu :includes="['View Labels', 'Users', 'Settings', 'Logout']" />
+            <GlobalMoreMenu
+              :includes="['View Labels', 'View Queue', 'Users', 'Settings', 'Logout']"
+            />
             <button
               class="text-sm font-medium text-gray-50 bg-black dark:bg-gray-100 dark:hover:bg-gray-100/70 dark:text-gray-900 py-1 px-2 rounded-lg select-none"
               @click="goBack"
@@ -334,6 +336,7 @@ import { ref, reactive, computed, onMounted, onUnmounted, toRaw } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useAlerts } from '../composables/useAlerts.js'
 import { useSettings } from '../composables/useSettings.js'
+import { useQueueCount } from '../composables/useQueueCount.js'
 
 import Header from '../components/Header.vue'
 import GlobalMoreMenu from '../components/GlobalMoreMenu.vue'
@@ -343,6 +346,7 @@ import ConfirmModal from '../components/ConfirmModal.vue'
 import Badge from '../components/Badge.vue'
 
 const { formattedDate, currentUser, playSoundIfEnabled } = useSettings()
+const { queueCount, getQueueCount } = useQueueCount()
 
 // Client data
 const client = ref({})
@@ -359,7 +363,6 @@ const labelModels = ref({})
 const selectedLabels = ref([])
 const searchProduct = ref('')
 const deletedLabelIds = ref([])
-const queueCount = ref(0)
 
 const clientName = computed(() => client.value?.name || 'Client')
 
@@ -632,10 +635,6 @@ function updateLabel(labelId, updated) {
   alerts.info('Label updated (not saved)')
 }
 
-const fetchQueueCount = async () => {
-  queueCount.value = await window.api.countQueue()
-}
-
 async function saveLabels() {
   try {
     // Save new unsaved labels
@@ -738,14 +737,22 @@ const saveLabelsConfirmed = async () => {
   // }
 }
 
-const queueLabel = (labelId) => {
+const queueLabel = async (labelId) => {
   const normalizedId = normalizeId(labelId)
   const label = labelModels.value[normalizedId]
+
+  await window.api.addToQueue({
+    product: label.product,
+    instructions: label.instructions,
+    warning: label.warning,
+    client: client.value.name
+  })
 
   if (!label) {
     alerts.error('Label not found')
     return
   }
+  await getQueueCount()
 
   // Add to queue logic here
   alerts.success('Label added to queue')
@@ -765,8 +772,9 @@ const printLabel = async (id) => {
     await window.api.printerPrint([
       {
         ...toRaw(label),
-        client: client.value ? JSON.parse(JSON.stringify(toRaw(client.value))) : null,
-        user: currentUser.value?.name || null
+        client: client.value ? client.value.name : '',
+        user: currentUser.value?.name || null,
+        timestamp: formattedDate.value
       }
     ])
     alerts.success('Label sent to printer')
@@ -800,8 +808,9 @@ const bulkPrint = async () => {
     // Prepare job list with client and user data
     const jobList = jobs.map((j) => ({
       ...toRaw(j),
-      client: client.value ? JSON.parse(JSON.stringify(toRaw(client.value))) : null,
-      user: currentUser.value?.name || null
+      client: client.value ? client.value.name : '',
+      user: currentUser.value?.name || null,
+      timestamp: formattedDate.value
     }))
 
     playSoundIfEnabled()
@@ -859,6 +868,7 @@ const bulkQueue = async () => {
         failedCount.push(labelId)
       }
     }
+    await getQueueCount()
 
     // Show results
     if (successCount.length > 0) {
@@ -939,7 +949,7 @@ const bulkDelete = async () => {
 const refresh = async () => {
   await getClient(route.params.id)
   await getClientLabels(route.params.id)
-  await fetchQueueCount()
+  await getQueueCount()
 }
 
 const refreshClientLabels = async () => {

@@ -4,4 +4,4 @@ out
 .eslintcache
 *.log*
 .vscode
-build
+dist

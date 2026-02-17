@@ -59,7 +59,9 @@
         <!-- Results count and Bulk Actions -->
         <div class="mt-3 flex items-center justify-between">
           <div class="text-sm text-gray-600 dark:text-gray-400">
-            {{ sortedData.length }} {{ sortedData.length === 1 ? 'user' : 'users' }} found
+            <Badge :mode="sortedData.length <= 0 ? 'danger' : 'info'"
+              >Users: {{ sortedData.length }}</Badge
+            >
             <span
               v-if="selected.length > 0"
               class="ml-2 text-blue-600 dark:text-blue-400 font-medium"
@@ -211,7 +213,9 @@
                       <button
                         class="p-2 rounded-lg bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 hover:bg-blue-200 dark:hover:bg-blue-900/50 transition-all duration-200 hover:scale-110 select-none"
                         title="Edit"
-                        @click="handleEdit(item.id)"
+                        @click="
+                          handleEditUser(item.id, item.name, item.email, item.role, item.position)
+                        "
                       >
                         <svg
                           xmlns="http://www.w3.org/2000/svg"
@@ -380,6 +384,16 @@
     </div>
   </div>
   <AddNewUser :open="showUserModal" @close="showUserModal = false" @confirm="handleUserAdded" />
+  <EditUser
+    :id="editUserID"
+    :open="showEditUserModal"
+    :name="editUserName"
+    :email="editUserEmail"
+    :role="editUserRole"
+    :position="editUserPosition"
+    @close="showEditUserModal = false"
+    @confirm="handleUserEdited"
+  />
 </template>
 
 <script setup>
@@ -389,6 +403,8 @@
 import { ref, computed, readonly, defineExpose, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 import AddNewUser from '../pages/AddNewUser.vue'
+import Badge from './Badge.vue'
+import EditUser from '../pages/EditUser.vue'
 import { useAlerts } from '../composables/useAlerts.js'
 import { useConfirm } from '../composables/useConfirm.js'
 import { runQuery } from '../utils/api.js'
@@ -416,6 +432,14 @@ const itemsPerPage = ref(10)
 const sortConfig = ref({ key: null, direction: 'asc' })
 const searchQuery = ref('')
 const searchInput = ref(null)
+
+// Edit User
+const showEditUserModal = ref(false)
+const editUserID = ref('')
+const editUserName = ref('')
+const editUserEmail = ref('')
+const editUserRole = ref('')
+const editUserPosition = ref('')
 
 /* =========================================================
  * Keyboard Shortcuts
@@ -584,16 +608,29 @@ const bulkDeleteUsers = async () => {
 /* =========================================================
  * Navigation / UI Helpers
  * ========================================================= */
-const handleEdit = (id) => router.push({ name: 'User', params: { id } })
 
 const handleUserAdded = async () => {
   showUserModal.value = false
   await loadUsers()
 }
 
+const handleUserEdited = async () => {
+  showEditUserModal.value = false
+  await loadUsers()
+}
+
 // Close menu when clicking outside / scrolling
 const closeMenu = () => {
   openMenuId.value = null
+}
+
+const handleEditUser = (id, name, email, role, position) => {
+  editUserID.value = id
+  editUserName.value = name
+  editUserEmail.value = email
+  editUserRole.value = role
+  editUserPosition.value = position
+  showEditUserModal.value = true
 }
 
 /* =========================================================

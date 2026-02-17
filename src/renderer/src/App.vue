@@ -1,5 +1,5 @@
 <template>
-  <router-view />
+  <router-view :key="refreshKey" />
   <AlertsStack />
   <ConfirmModal
     :show="modalState.show"
@@ -7,7 +7,7 @@
     @confirm="onConfirm"
     @cancel="onCancel"
   />
-  <SettingsModal :show="showSettings" @close="showSettings = false" />
+  <SettingsModal :key="refreshKey" :show="showSettings" @close="showSettings = false" />
 </template>
 
 <script setup>
@@ -16,18 +16,19 @@ import AlertsStack from './components/AlertsStack.vue'
 import ConfirmModal from './components/ConfirmModal.vue'
 import { modalState, useConfirm } from './composables/useConfirm'
 import SettingsModal from './pages/SettingsModal.vue'
-import { showSettings, useSettings } from './composables/useSettings'
+import { showSettings, useSettings, refreshKey } from './composables/useSettings'
 import { useRoute, useRouter } from 'vue-router'
 
 const route = useRoute()
 const router = useRouter()
-const { currentUser, closeSettings } = useSettings()
+const { currentUser, closeSettings, doRefresh } = useSettings()
 
 // const { loadSettings } = useSettings()
 const { onConfirm, onCancel, confirm } = useConfirm()
 
 const handeLogout = async () => {
   await window.api.logoutUser()
+  doRefresh()
   router.replace({ name: 'LoginPage' })
 }
 

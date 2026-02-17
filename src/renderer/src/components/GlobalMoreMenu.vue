@@ -36,7 +36,7 @@ const props = defineProps({
 const router = useRouter()
 const alerts = useAlerts()
 const { confirm } = useConfirm()
-const { currentUser } = useSettings()
+const { currentUser, doRefresh } = useSettings()
 
 const handeLogout = async () => {
   await window.api.logoutUser()
@@ -56,6 +56,7 @@ const confirmClearQueue = async () => {
 
 const confirmLogout = async () => {
   if (await confirm('Are you sure you want to logout?')) {
+    doRefresh()
     await handeLogout()
   }
 }
@@ -79,7 +80,7 @@ const actions = computed(() => {
     },
     {
       label: 'Users',
-      shortcut: 'Ctrl + G',
+      shortcut: 'Ctrl + U',
       handler: () => router.push({ name: 'Users' })
     },
     {

@@ -26,6 +26,8 @@ const api = {
 
   saveSettings: (data) => ipcRenderer.invoke('settings:save', data),
 
+  setTheme: (theme) => ipcRenderer.invoke('settings:theme', theme),
+
   /* ------------------------------------------------------------------
    * Queue
    * ------------------------------------------------------------------ */
@@ -45,6 +47,7 @@ const api = {
    * ------------------------------------------------------------------ */
 
   printerPrint: (job) => ipcRenderer.invoke('printer:print', job),
+  printerTempPrint: (job) => ipcRenderer.invoke('printer:temp-print', job),
 
   clientLabelsPrint: (clientId) => ipcRenderer.invoke('client-label:print', clientId),
 
@@ -65,7 +68,12 @@ const api = {
   createUser: (name, email, password, role = 'user', position = null) =>
     ipcRenderer.invoke('users:add', name, email, password, role, position),
 
+  updateUser: (id, name, email, role = 'user', position = null) =>
+    ipcRenderer.invoke('users:update', id, name, email, role, position),
+
   deleteUser: (id) => ipcRenderer.invoke('users:delete', id),
+
+  changeUserPassword: (data) => ipcRenderer.invoke('user:change-password', data),
 
   /* ------------------------------------------------------------------
    * Clients
@@ -93,11 +101,15 @@ const api = {
 
   createClientLabel: (clientId, product, instructions, warning) =>
     ipcRenderer.invoke('clients:add-label', clientId, product, instructions, warning),
+
   createClientLabels: (data) => ipcRenderer.invoke('clients:add-labels', data),
+
   updateClientLabel: (id, product, instructions, warning) =>
     ipcRenderer.invoke('client-label:update', id, product, instructions, warning),
 
   deleteClientLabel: (id) => ipcRenderer.invoke('client-label:delete', id),
+
+  countClientLabels: (clientId) => ipcRenderer.invoke('client-label:count', clientId),
 
   sendClientLabelsToQueue: (clientId) => ipcRenderer.invoke('client-label:queue', clientId),
 
@@ -108,7 +120,34 @@ const api = {
 
   saveSetup: (data) => ipcRenderer.invoke('app:setup-complete', data),
 
-  isSetupComplete: () => ipcRenderer.invoke('app:is-setup-complete')
+  isSetupComplete: () => ipcRenderer.invoke('app:is-setup-complete'),
+
+  /* ------------------------------------------------------------------
+   * Admin / Stats
+   * ------------------------------------------------------------------ */
+  getStats: () => ipcRenderer.invoke('stats:get-general'),
+
+  getBackups: () => ipcRenderer.invoke('admin:get-db-backups'),
+
+  createManualBackup: () => ipcRenderer.invoke('admin:create-db-backup'),
+
+  lastBackupDate: () => ipcRenderer.invoke('admin:last-db-backup'),
+
+  downloadBackup: (fileName) => ipcRenderer.invoke('admin:download-backup', fileName),
+
+  getBackupKey: (fileName) => ipcRenderer.invoke('admin:get-backup-key', fileName),
+
+  removeBackup: (fileName) => ipcRenderer.invoke('admin:remove-backup', fileName),
+
+  createBackup: () => ipcRenderer.invoke('admin:create-backup'),
+
+  getExportPreview: (options) => ipcRenderer.invoke('admin:get-export-preview', options),
+
+  exportData: (options) => ipcRenderer.invoke('admin:export-data', options),
+
+  importCSVData: (data) => ipcRenderer.invoke('admin:import-csv-data', data),
+
+  getBackupSettings: () => ipcRenderer.invoke('admin:get-backup-settings')
 }
 
 // Use `contextBridge` APIs to expose Electron APIs

@@ -319,6 +319,7 @@ function soothingPrinterSound() {
 const printLabel = async (id) => {
   // manualBeep()
   soothingPrinterSound()
+
   await window.api.printerPrint({ ...labelModels[id] })
   alerts.success('Print completed.')
 }

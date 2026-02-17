@@ -75,4 +75,47 @@ function getFormattedDateTime(id, date = new Date()) {
   return formats[id] ? formats[id]() : ''
 }
 
-export { soothingPrinterSound, getFormattedDateTime }
+function timeAgo(dateInput) {
+  if (!dateInput) return 'no date'
+
+  // Force conversion to string and trim any accidental whitespace
+  let cleanDate = String(dateInput).trim()
+
+  // Fix for some DBs that use a space instead of 'T'
+  // Only replaces if it matches the pattern "YYYY-MM-DD HH:mm:ss"
+  if (cleanDate.includes(' ') && !cleanDate.includes('T')) {
+    cleanDate = cleanDate.replace(' ', 'T')
+  }
+
+  const date = new Date(cleanDate)
+
+  // If it's still Invalid, let's see why
+  if (isNaN(date.getTime())) {
+    console.error('Failed to parse date string:', dateInput)
+    return 'Invalid date'
+  }
+
+  const now = new Date()
+  const secondsDiff = Math.round((date - now) / 1000)
+
+  const units = [
+    { label: 'year', seconds: 31536000 },
+    { label: 'month', seconds: 2592000 },
+    { label: 'week', seconds: 604800 },
+    { label: 'day', seconds: 86400 },
+    { label: 'hour', seconds: 3600 },
+    { label: 'minute', seconds: 60 },
+    { label: 'second', seconds: 1 }
+  ]
+
+  const rtf = new Intl.RelativeTimeFormat('en', { numeric: 'auto' })
+
+  for (const unit of units) {
+    if (Math.abs(secondsDiff) >= unit.seconds || unit.label === 'second') {
+      const value = Math.round(secondsDiff / unit.seconds)
+      return rtf.format(value, unit.label)
+    }
+  }
+}
+
+export { soothingPrinterSound, getFormattedDateTime, timeAgo }

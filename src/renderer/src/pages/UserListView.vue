@@ -3,13 +3,13 @@
     <div class="grid grid-rows-[3.5rem_1fr] h-full">
       <Header
         title="Users"
-        :badge-label="`Users: ${clientCount}`"
-        :badge-mode="clientCount <= 0 ? 'danger' : 'info'"
+        :badge-label="`Queue: ${queueCount}`"
+        :badge-mode="queueCount <= 0 ? 'danger' : 'info'"
       >
         <template #actions>
           <button
             class="p-2 rounded-lg bg-gray-200/60 dark:bg-gray-700 hover:bg-gray-300 transition-colors text-gray-700 dark:text-gray-300 dark:hover:bg-gray-600"
-            @click="refreshClients"
+            @click="refreshUsers"
           >
             <svg
               xmlns="http://www.w3.org/2000/svg"
@@ -40,7 +40,7 @@
           >
             Add Client
           </button> -->
-          <GlobalMoreMenu :includes="['View Labels', 'Settings', 'Logout']" />
+          <GlobalMoreMenu :includes="['View Labels', 'Clients', 'Settings', 'Logout']" />
 
           <button
             class="text-sm font-medium text-gray-50 bg-black dark:bg-gray-100 dark:hover:bg-gray-100/70 dark:text-gray-900 py-1 px-2 rounded-lg"
@@ -59,20 +59,21 @@
   </div>
 </template>
 <script setup>
-import { ref } from 'vue'
+import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAlerts } from '../composables/useAlerts.js'
 import Header from '../components/Header.vue'
 import GlobalMoreMenu from '../components/GlobalMoreMenu.vue'
 import UserTable from '../components/UserTable.vue'
+import { useQueueCount } from '../composables/useQueueCount.js'
 // import { useConfirm } from '../composables/useConfirm.js'
 
 // const { confirm } = useConfirm()
 const router = useRouter()
-const userCount = ref(0)
 const alerts = useAlerts()
 const isRefreshing = ref(false)
 const usersRef = ref(null)
+const { queueCount, getQueueCount } = useQueueCount()
 
 const fetchUserCount = async () => {
   // userCount.value = await window.api.countClients()
@@ -99,7 +100,7 @@ function goToQueue() {
   router.push({ name: 'MedicationLabelQueue' })
 }
 
-// onMounted(() => {
-//   refresh()
-// })
+onMounted(() => {
+  getQueueCount()
+})
 </script>

@@ -1,5 +1,5 @@
-appId: com.electron.app
-productName: atom_rxlabel
+appId: com.rxlabel.app
+productName: RxLabel
 directories:
   buildResources: build
 files:
@@ -8,11 +8,15 @@ files:
   - '!electron.vite.config.{js,ts,mjs,cjs}'
   - '!{.eslintcache,eslint.config.mjs,.prettierignore,.prettierrc.yaml,dev-app-update.yml,CHANGELOG.md,README.md}'
   - '!{.env,.env.*,.npmrc,pnpm-lock.yaml}'
+extraResources:
+  - from: bin/main.exe
+    to: bin/main.exe
 asarUnpack:
-  - "**/node_modules/better-sqlite3/**/*"
+  - '**/node_modules/better-sqlite3/**/*'
   - resources/**
 win:
-  executableName: atom_rxlabel
+  executableName: rxlabel
+  icon: build/icon.ico
 nsis:
   artifactName: ${name}-${version}-setup.${ext}
   shortcutName: ${productName}

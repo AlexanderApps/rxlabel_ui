@@ -3,6 +3,7 @@ import { soothingPrinterSound } from '../utils/utils.js'
 import { runQuery } from '../utils/api.js'
 
 export const showSettings = ref(false)
+export const refreshKey = ref(0)
 
 // Shared state across all components
 const settings = ref({
@@ -17,8 +18,9 @@ const settings = ref({
   font_size: 'medium',
   created_at: null
 })
-
 const currentUser = ref(null)
+
+const currentTheme = ref(localStorage.getItem('theme') || 'system')
 
 const now = ref(new Date())
 
@@ -167,18 +169,24 @@ export function useSettings(silentErrors = false) {
   })
 
   // Apply theme to document
-  const applyTheme = (theme) => {
+  const applyTheme = async (theme) => {
+    currentTheme.value = theme
+    setTimeout(async () => {
+      await window.api.setTheme(theme)
+    }, 120)
+
     if (theme === 'dark') {
       document.documentElement.classList.add('dark')
     } else if (theme === 'light') {
       document.documentElement.classList.remove('dark')
-    } else if (theme === 'system') {
-      if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
-        document.documentElement.classList.add('dark')
-      } else {
-        document.documentElement.classList.remove('dark')
-      }
+    } else {
+      const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches
+      document.documentElement.classList.toggle('dark', prefersDark)
     }
+  }
+
+  const doRefresh = () => {
+    refreshKey.value = refreshKey.value + 1
   }
 
   // Load settings from database
@@ -189,8 +197,8 @@ export function useSettings(silentErrors = false) {
         settings.value = { ...settings.value, ...dbSettings }
 
         // Apply theme
-        if (settings.value.theme) {
-          applyTheme(settings.value.theme)
+        if (currentTheme.value) {
+          applyTheme(currentTheme.value)
         }
 
         isLoaded.value = true
@@ -265,7 +273,7 @@ export function useSettings(silentErrors = false) {
 
   // Watch for theme changes
   watch(
-    () => settings.value.theme,
+    () => currentTheme.value,
     (newTheme) => {
       applyTheme(newTheme)
     }
@@ -291,7 +299,7 @@ export function useSettings(silentErrors = false) {
   if (typeof window !== 'undefined') {
     // eslint-disable-next-line no-unused-vars
     window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', (e) => {
-      if (settings.value.theme === 'system') {
+      if (currentTheme.value === 'system') {
         applyTheme('system')
       }
     })
@@ -302,6 +310,7 @@ export function useSettings(silentErrors = false) {
     settings,
     isLoaded,
     currentUser,
+    currentTheme,
 
     // Computed
     dateTimeOptions,
@@ -317,7 +326,8 @@ export function useSettings(silentErrors = false) {
     formatDate,
     applyTheme,
     playSoundIfEnabled,
+    refreshSettingsAndUser,
     getCurrentUser,
-    refreshSettingsAndUser
+    doRefresh
   }
 }

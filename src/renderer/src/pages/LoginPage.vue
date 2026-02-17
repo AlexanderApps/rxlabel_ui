@@ -64,54 +64,35 @@
       <div class="text-center mb-8">
         <div
           :class="[
-            'inline-flex items-center justify-center w-16 h-16 rounded-full mb-4',
-            isDark ? 'bg-blue-600' : 'bg-blue-500'
+            'p-1 inline-flex items-center justify-center w-18 h-18 border border-gray-200 dark:border-gray-700 rounded-full shadow-2xl mb-2'
           ]"
         >
-          <!-- <svg
-            xmlns="http://www.w3.org/2000/svg"
-            width="32"
-            height="32"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="white"
-            stroke-width="2"
-            stroke-linecap="round"
-            stroke-linejoin="round"
-          >
-            <polyline points="6 9 6 2 18 2 18 9"></polyline>
-            <path
-              d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"
-            ></path>
-            <rect width="12" height="8" x="6" y="14"></rect>
-          </svg> -->
-
           <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200">
             <!-- Gradient definitions -->
             <defs>
               <linearGradient id="bgGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-                <stop offset="0%" style="stop-color: #2563eb; stop-opacity: 1" />
-                <stop offset="100%" style="stop-color: #1d4ed8; stop-opacity: 1" />
+                <stop offset="0%" style="stop-color: #f8fafc; stop-opacity: 1" />
+                <stop offset="100%" style="stop-color: #e2e8f0; stop-opacity: 1" />
               </linearGradient>
               <linearGradient id="accentGrad" x1="0%" y1="0%" x2="100%" y2="100%">
                 <stop offset="0%" style="stop-color: #10b981; stop-opacity: 1" />
                 <stop offset="100%" style="stop-color: #059669; stop-opacity: 1" />
               </linearGradient>
+              <linearGradient id="labelGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" style="stop-color: #3b82f6; stop-opacity: 1" />
+                <stop offset="100%" style="stop-color: #2563eb; stop-opacity: 1" />
+              </linearGradient>
             </defs>
 
-            <!-- Rounded square background -->
-            <rect width="200" height="200" rx="40" fill="url(#bgGradient)" />
-
-            <!-- White Rx symbol -->
+            <!-- Orange Rx symbol with formal serif font -->
             <text
               x="100"
-              y="135"
-              font-family="Georgia, serif"
+              y="130"
+              font-family="Times New Roman, Times, serif"
               font-size="110"
               font-weight="bold"
-              fill="white"
+              fill="#ea580c"
               text-anchor="middle"
-              font-style="italic"
             >
               Rx
             </text>
@@ -122,33 +103,33 @@
               <rect x="-10" y="8" width="20" height="4" fill="url(#accentGrad)" rx="2" />
             </g>
 
-            <!-- Small label tag icon in bottom right corner -->
-            <g transform="translate(150, 155)">
-              <path d="M 0,0 L 20,0 L 25,5 L 25,15 L 0,15 Z" fill="white" opacity="0.9" />
-              <circle cx="6" cy="7.5" r="2" fill="url(#bgGradient)" />
+            <!-- Larger blue label tag icon in bottom right corner -->
+            <g transform="translate(140, 145)">
+              <path d="M 0,0 L 30,0 L 37,7 L 37,23 L 0,23 Z" fill="url(#labelGrad)" />
+              <circle cx="9" cy="11.5" r="3" fill="white" />
               <line
-                x1="11"
-                y1="5"
-                x2="20"
-                y2="5"
-                stroke="url(#bgGradient)"
-                stroke-width="1.5"
+                x1="17"
+                y1="7"
+                x2="30"
+                y2="7"
+                stroke="white"
+                stroke-width="2"
                 stroke-linecap="round"
               />
               <line
-                x1="11"
-                y1="10"
-                x2="20"
-                y2="10"
-                stroke="url(#bgGradient)"
-                stroke-width="1.5"
+                x1="17"
+                y1="16"
+                x2="30"
+                y2="16"
+                stroke="white"
+                stroke-width="2"
                 stroke-linecap="round"
               />
             </g>
           </svg>
         </div>
 
-        <div class="flex items-center justify-center">
+        <div class="flex items-center justify-center text-center">
           <svg class="w-50" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 120">
             <!-- Gradient definitions -->
             <defs>
@@ -161,8 +142,6 @@
                 <stop offset="100%" style="stop-color: #2563eb; stop-opacity: 1" />
               </linearGradient>
             </defs>
-
-            <!-- Background transparent -->
 
             <!-- "Rx" in orange -->
             <text
@@ -191,13 +170,65 @@
           </svg>
         </div>
 
-        <!-- <h1 :class="['text-2xl font-bold mb-2', isDark ? 'text-white' : 'text-gray-900']">
-          Printer Management
-        </h1> -->
-
         <p :class="['text-sm', isDark ? 'text-gray-400' : 'text-gray-600']">
           Sign in to your account
         </p>
+      </div>
+
+      <!-- Error Alert -->
+      <div
+        v-if="errorMessage"
+        :class="[
+          'mb-6 p-4 rounded-lg border flex items-start gap-3 animate-shake',
+          isDark
+            ? 'bg-red-900/20 border-red-800 text-red-300'
+            : 'bg-red-50 border-red-200 text-red-800'
+        ]"
+      >
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          width="20"
+          height="20"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          class="flex-shrink-0 mt-0.5"
+        >
+          <circle cx="12" cy="12" r="10"></circle>
+          <line x1="12" y1="8" x2="12" y2="12"></line>
+          <line x1="12" y1="16" x2="12.01" y2="16"></line>
+        </svg>
+        <div class="flex-1">
+          <p class="font-medium text-sm">{{ errorMessage }}</p>
+          <p v-if="loginAttempts >= 3" class="text-xs mt-1 opacity-90">
+            After {{ maxAttempts }} failed attempts, please contact your administrator.
+          </p>
+        </div>
+        <button
+          @click="clearError"
+          :class="[
+            'flex-shrink-0 hover:opacity-70 transition-opacity',
+            isDark ? 'text-red-300' : 'text-red-600'
+          ]"
+        >
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            width="18"
+            height="18"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+          </svg>
+        </button>
       </div>
 
       <!-- Login Form -->
@@ -219,12 +250,16 @@
             placeholder="Enter your username"
             :class="[
               'w-full px-4 py-3 rounded-lg border transition-colors focus:outline-none focus:ring-2',
-              isDark
-                ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400 focus:border-blue-500 focus:ring-blue-500'
-                : 'bg-white border-gray-300 text-gray-900 placeholder-gray-400 focus:border-blue-500 focus:ring-blue-500'
+              hasError
+                ? isDark
+                  ? 'bg-gray-700 border-red-500 text-white placeholder-gray-400 focus:border-red-500 focus:ring-red-500'
+                  : 'bg-white border-red-300 text-gray-900 placeholder-gray-400 focus:border-red-500 focus:ring-red-500'
+                : isDark
+                  ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400 focus:border-blue-500 focus:ring-blue-500'
+                  : 'bg-white border-gray-300 text-gray-900 placeholder-gray-400 focus:border-blue-500 focus:ring-blue-500'
             ]"
             required
-            @input="username = $event.target.value"
+            @input="handleUsernameInput"
             @keypress="handleKeyPress"
           />
         </div>
@@ -246,12 +281,16 @@
               placeholder="Enter your password"
               :class="[
                 'w-full px-4 py-3 rounded-lg border transition-colors focus:outline-none focus:ring-2',
-                isDark
-                  ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400 focus:border-blue-500 focus:ring-blue-500'
-                  : 'bg-white border-gray-300 text-gray-900 placeholder-gray-400 focus:border-blue-500 focus:ring-blue-500'
+                hasError
+                  ? isDark
+                    ? 'bg-gray-700 border-red-500 text-white placeholder-gray-400 focus:border-red-500 focus:ring-red-500'
+                    : 'bg-white border-red-300 text-gray-900 placeholder-gray-400 focus:border-red-500 focus:ring-red-500'
+                  : isDark
+                    ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400 focus:border-blue-500 focus:ring-blue-500'
+                    : 'bg-white border-gray-300 text-gray-900 placeholder-gray-400 focus:border-blue-500 focus:ring-blue-500'
               ]"
               required
-              @input="password = $event.target.value"
+              @input="handlePasswordInput"
               @keypress="handleKeyPress"
             />
 
@@ -299,41 +338,15 @@
                 <path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"></path>
                 <circle cx="12" cy="12" r="3"></circle>
               </svg>
-
-              <!-- <component :is="showPassword ? EyeOff : Eye" :size="20" /> -->
             </button>
           </div>
         </div>
-
-        <!-- Remember Me & Forgot Password -->
-        <!-- <div class="flex items-center justify-between">
-
-          <label class="flex items-center">
-            <input
-              type="checkbox"
-              class="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-            />
-            <span :class="['ml-2 text-sm', isDark ? 'text-gray-300' : 'text-gray-700']">
-              Remember me
-            </span>
-          </label>
-
-          <button
-            :class="[
-              'text-sm font-medium',
-              isDark ? 'text-blue-400 hover:text-blue-300' : 'text-blue-600 hover:text-blue-500'
-            ]"
-            @click="console.log('Forgot password clicked')"
-          >
-            Forgot password?
-          </button>
-        </div> -->
 
         <div class="h-0.5"></div>
         <!-- Submit Button -->
         <button
           class="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-3 rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-          :disabled="isLoading"
+          :disabled="isLoading || loginAttempts >= maxAttempts"
           @click="handleSubmit"
         >
           <!-- Spinner -->
@@ -359,7 +372,15 @@
             ></path>
           </svg>
 
-          <span>{{ isLoading ? 'Signing In...' : 'Sign In' }}</span>
+          <span>
+            {{
+              loginAttempts >= maxAttempts
+                ? 'Account Locked'
+                : isLoading
+                  ? 'Signing In...'
+                  : 'Sign In'
+            }}
+          </span>
         </button>
       </div>
 
@@ -381,7 +402,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { useSettings } from '../composables/useSettings'
 
@@ -391,8 +412,13 @@ const password = ref('')
 const showPassword = ref(false)
 const isDark = ref(false)
 const isLoading = ref(false)
+const errorMessage = ref('')
+const loginAttempts = ref(0)
+const maxAttempts = 5
 const { refreshSettingsAndUser } = useSettings()
 const focusUsernameInput = ref(null)
+
+const hasError = computed(() => !!errorMessage.value)
 
 onMounted(() => {
   const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches
@@ -402,21 +428,95 @@ onMounted(() => {
 
 const delay = (ms) => new Promise((res) => setTimeout(res, ms))
 
+const clearError = () => {
+  errorMessage.value = ''
+}
+
+const handleUsernameInput = (e) => {
+  username.value = e.target.value
+  if (hasError.value) {
+    clearError()
+  }
+}
+
+const handlePasswordInput = (e) => {
+  password.value = e.target.value
+  if (hasError.value) {
+    clearError()
+  }
+}
+
 const handleSubmit = async () => {
+  // Clear any previous errors
+  clearError()
+
+  // Validate inputs
+  if (!username.value.trim()) {
+    errorMessage.value = 'Please enter your username'
+    focusUsernameInput.value?.focus()
+    return
+  }
+
+  if (!password.value) {
+    errorMessage.value = 'Please enter your password'
+    return
+  }
+
+  // Check if account is locked
+  if (loginAttempts.value >= maxAttempts) {
+    errorMessage.value = 'Account temporarily locked. Please contact your administrator.'
+    return
+  }
+
   isLoading.value = true
+
   try {
     await delay(1000)
 
     const response = await window.api.loginUser(username.value, password.value)
 
     if (response?.success) {
+      // Reset attempts on successful login
+      loginAttempts.value = 0
+      errorMessage.value = ''
+
       setTimeout(async () => {
         await refreshSettingsAndUser()
         router.replace({ name: 'MedicationLabel' })
       }, 500)
+    } else {
+      // Handle login failure
+      loginAttempts.value++
+
+      // Customize error message based on response or attempt count
+      if (response?.message) {
+        errorMessage.value = response.message
+      } else if (loginAttempts.value >= maxAttempts) {
+        errorMessage.value = 'Too many failed attempts. Account temporarily locked.'
+      } else if (loginAttempts.value >= 3) {
+        errorMessage.value = `Invalid username or password. ${maxAttempts - loginAttempts.value} attempts remaining.`
+      } else {
+        errorMessage.value = 'Invalid username or password. Please try again.'
+      }
+
+      // Clear password field on failed attempt
+      password.value = ''
     }
   } catch (error) {
     console.error('Sign in error:', error)
+    loginAttempts.value++
+
+    // Handle different error types
+    if (error.message?.includes('network') || error.message?.includes('fetch')) {
+      errorMessage.value = 'Connection error. Please check your network and try again.'
+    } else if (loginAttempts.value >= maxAttempts) {
+      errorMessage.value = 'Too many failed attempts. Please contact your administrator.'
+    } else {
+      errorMessage.value = 'An error occurred. Please try again.'
+    }
+
+    // Clear password field on error
+    password.value = ''
   } finally {
     isLoading.value = false
   }
@@ -426,3 +526,29 @@ const handleKeyPress = (e) => {
   if (e.key === 'Enter') handleSubmit()
 }
 </script>
+
+<style scoped>
+@keyframes shake {
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  10%,
+  30%,
+  50%,
+  70%,
+  90% {
+    transform: translateX(-4px);
+  }
+  20%,
+  40%,
+  60%,
+  80% {
+    transform: translateX(4px);
+  }
+}
+
+.animate-shake {
+  animation: shake 0.5s ease-in-out;
+}
+</style>

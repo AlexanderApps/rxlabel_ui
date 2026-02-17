@@ -9,12 +9,19 @@ import UserListView from '../renderer/src/pages/UserListView.vue'
 import ClientPage from '../renderer/src/pages/ClientPage.vue'
 import Setup from '../renderer/src/pages/Setup.vue'
 import AdminPage from '../renderer/src/pages/AdminPage.vue'
+import TestLabelJson from '../renderer/src/pages/TestLabelJson.vue'
 
 const routes = [
   {
     path: '/',
     name: 'MedicationLabel',
     component: MedicationLabel,
+    meta: { requiresAuth: true }
+  },
+  {
+    path: '/test-label-json',
+    name: 'TestLabelJson',
+    component: TestLabelJson,
     meta: { requiresAuth: true }
   },
   {

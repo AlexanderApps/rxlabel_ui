@@ -212,8 +212,9 @@
 // // In this file you can include the rest of your app's specific main process
 // // code. You can also put them in separate files and require them here.
 
-import { app, shell, BrowserWindow, ipcMain, nativeTheme } from 'electron'
+import { app, shell, BrowserWindow, ipcMain, nativeTheme, dialog } from 'electron'
 import { join } from 'path'
+import { existsSync, mkdirSync } from 'node:fs'
 import { electronApp, optimizer, is } from '@electron-toolkit/utils'
 import icon from '../../resources/rxlabel_icon.png?asset'
 
@@ -221,9 +222,15 @@ import icon from '../../resources/rxlabel_icon.png?asset'
 import { AppDatabase } from './db' // Corrected import
 import { verifyMasterPassword, hashMasterPassword } from './auth'
 import { printerStart, enqueuePrint, printerShutdown } from './printer'
-import { themeText } from './printer_themes'
-import { cleanPrinterData } from './utils'
 import { verifyLicense } from './license'
+import { writeExportFile } from './utils'
+import log from './logger'
+import { LabelGeneratorV2 } from './label_gen_v2'
+import { buildJobPages } from './label_gen_v3'
+import { buildPrinterJobs } from './label_builder'
+import { ensureDefaultTemplates } from './templates'
+
+log.initialize()
 
 let CURRENT_USER = null
 let SETTINGS = null
@@ -305,6 +312,10 @@ app.whenReady().then(async () => {
   SETTINGS = db.fetchSettings()
 
   console.log(db.getDiagnostics())
+
+  console.log(db.backupManager.settings)
+
+  ensureDefaultTemplates()
 
   // 2. Initialize Services
   printerStart()
@@ -423,24 +434,40 @@ function registerIpcHandlers() {
    * ------------------------------------------------------------------ */
 
   ipcMain.handle('printer:print', async (_, job) => {
-    const cleaned = cleanPrinterData(job, SETTINGS, CURRENT_USER)
+    enqueuePrint(buildPrinterJobs(job, SETTINGS, CURRENT_USER))
+  })
 
-    if (Array.isArray(cleaned)) {
-      await enqueuePrint(cleaned.map(themeText))
-    } else {
-      await enqueuePrint(themeText(cleaned))
+  ipcMain.handle('printer:temp-print', async (_, job) => {
+    const jobPages = buildJobPages(job.jobPages)
+    const label = {
+      printerInfo: {
+        printerName: 'DP27P Label Printer'
+      },
+      jobInfo: {
+        jobWidth: LabelGeneratorV2.PAPER_WIDTH,
+        jobHeight: LabelGeneratorV2.PAPER_HEIGHT,
+        orientation: 0
+      },
+      jobPages
     }
+
+    await enqueuePrint(label)
+
+    // if (Array.isArray(cleaned)) {
+    //   await enqueuePrint(cleaned.map(themeText))
+    // } else {
+    //   await enqueuePrint(themeText(cleaned))
+    // }
+    // if (Array.isArray(cleaned)) {
+    //   await enqueuePrint()
+    // } else {
+    //   await enqueuePrint(label)
+    // }
   })
 
   ipcMain.handle('client-label:print', async (_, clientId) => {
     const job = await db.getClientLabelsWithClientName(clientId)
-    const cleaned = cleanPrinterData(job, SETTINGS, CURRENT_USER)
-
-    if (Array.isArray(cleaned)) {
-      await enqueuePrint(cleaned.map(themeText))
-    } else {
-      await enqueuePrint(themeText(cleaned))
-    }
+    enqueuePrint(buildPrinterJobs(job, SETTINGS, CURRENT_USER))
   })
 
   /* ------------------------------------------------------------------
@@ -489,6 +516,10 @@ function registerIpcHandlers() {
     return db.createUser(name, email, hashed, role, position)
   })
 
+  ipcMain.handle('users:update', async (_, id, name, email, role = 'user', position = null) => {
+    return db.updateUser(id, name, email, role, position)
+  })
+
   ipcMain.handle('users:me', () => CURRENT_USER)
 
   ipcMain.handle(
@@ -497,6 +528,29 @@ function registerIpcHandlers() {
   )
 
   ipcMain.handle('users:delete', (_, id) => db.deleteUser(id))
+
+  ipcMain.handle('user:change-password', async (event, { currentPassword, newPassword }) => {
+    try {
+      console.log(currentPassword, newPassword)
+      const curUser = await db.getUserForLogin(CURRENT_USER?.name)
+      console.log(curUser)
+      const isValid = await verifyMasterPassword(curUser?.secret, currentPassword)
+      console.log(isValid)
+
+      if (!isValid) {
+        return { success: false, error: 'Current password is incorrect' }
+      }
+
+      const newPasswordHash = await hashMasterPassword(newPassword)
+      console.log(newPassword)
+      await db.changeUserPassword(curUser?.id, newPasswordHash)
+
+      return { success: true }
+    } catch (error) {
+      console.error('Password change error:', error)
+      return { success: false, error: 'Failed to change password' }
+    }
+  })
 
   /* ------------------------------------------------------------------
    * Clients
@@ -537,6 +591,191 @@ function registerIpcHandlers() {
   ipcMain.handle('client-label:delete', (_, id) => db.deleteClientLabel(id))
 
   ipcMain.handle('client-label:queue', (_, clientId) => db.copyClientLabelToQueue(clientId))
+
+  ipcMain.handle('client-label:count', (_, clientId) => db.countClientLabels(clientId))
+
+  /* ------------------------------------------------------------------
+   * Admin / Stats
+   * ------------------------------------------------------------------ */
+
+  ipcMain.handle('stats:get-general', () => {
+    const numClients = db.countClients()
+    const numLabels = db.countLabels()
+    const numUsers = db.countUsers()
+    const diagnostics = db.getDiagnostics()
+    const db_health = db.getHealthScore()
+    const app_version = app.getVersion()
+    const last_backup_date = db.lastBackupDate()
+    return {
+      clients: numClients,
+      labels: numLabels,
+      users: numUsers,
+      diagnostics,
+      db_health,
+      app_version,
+      last_backup_date
+    }
+  })
+
+  ipcMain.handle('admin:get-db-backups', async () => {
+    return await db.getBackups()
+  })
+
+  ipcMain.handle('admin:create-db-backup', async () => {
+    return await db.createManualBackup()
+  })
+
+  ipcMain.handle('admin:last-db-backup', async () => {
+    return await db.lastBackupDate()
+  })
+
+  ipcMain.handle('admin:download-backup', async (event, fileName) => {
+    // 1. Ask user where to save the file
+    const { filePath, canceled } = await dialog.showSaveDialog({
+      title: 'Export Database Backup',
+      defaultPath: join(app.getPath('downloads'), fileName),
+      filters: [{ name: 'SQLite Database', extensions: ['db'] }]
+    })
+
+    if (canceled || !filePath) return { success: false }
+
+    try {
+      // 2. Copy the file from your internal backups folder to the user's choice
+      await db.downloadBackup(fileName, filePath)
+      return { success: true, path: filePath }
+    } catch (error) {
+      console.error('Export failed:', error)
+      return { success: false, error: error.message }
+    }
+  })
+
+  ipcMain.handle('admin:get-backup-key', async (event, fileName) => db.getBackupKey(fileName))
+
+  ipcMain.handle('admin:remove-backup', async (event, fileName) => db.removeBackup(fileName))
+
+  ipcMain.handle('admin:create-backup', async () => await db.createManualBackup())
+
+  // Get export preview
+  ipcMain.handle('admin:get-export-preview', async (event, options) => {
+    try {
+      const res = db.exportDataPreview(options)
+      return { success: true, ...res }
+    } catch (error) {
+      console.error('Preview error:', error)
+      return { success: false, error: error.message }
+    }
+  })
+
+  ipcMain.handle('admin:import-csv-data', async (event, { table, data }) => {
+    try {
+      const res = await db.importCSVData(table, data)
+      return { success: true, ...res }
+    } catch (error) {
+      console.error('CSV Import Error:', error)
+      return {
+        success: false,
+        error: error.message
+      }
+    }
+  })
+
+  // Export data
+  ipcMain.handle('admin:export-data', async (event, options) => {
+    try {
+      const {
+        tables,
+        format,
+        includeHeaders,
+        separateFiles,
+        includeTimestamps,
+        useDateFilter,
+        dateFrom,
+        dateTo
+      } = options
+
+      // Validate tables
+      const allowedTables = ['labels', 'clients', 'client_labels', 'queue']
+      const validTables = tables.filter((t) => allowedTables.includes(t))
+
+      if (validTables.length === 0) {
+        throw new Error('No valid tables selected')
+      }
+
+      // Show save dialog
+      const dialogOptions = {
+        title: 'Export Data',
+        defaultPath: join(require('os').homedir(), 'Downloads', `database_export_${Date.now()}`),
+        filters: []
+      }
+
+      if (separateFiles || validTables.length > 1) {
+        dialogOptions.properties = ['createDirectory', 'showOverwriteConfirmation']
+        dialogOptions.buttonLabel = 'Select Folder'
+      } else {
+        if (format === 'csv') {
+          dialogOptions.filters.push({ name: 'CSV Files', extensions: ['csv'] })
+        } else if (format === 'json') {
+          dialogOptions.filters.push({ name: 'JSON Files', extensions: ['json'] })
+        } else if (format === 'xlsx') {
+          dialogOptions.filters.push({ name: 'Excel Files', extensions: ['xlsx'] })
+        }
+      }
+
+      const { canceled, filePath } = await dialog.showSaveDialog(dialogOptions)
+
+      if (canceled || !filePath) {
+        return { success: false, error: 'Export cancelled' }
+      }
+
+      const exportedFiles = []
+
+      // Export each table
+      for (const tableName of validTables) {
+        // Fetch data from database
+        const data = db.fetchTableDataForExport(tableName, {
+          includeTimestamps,
+          useDateFilter,
+          dateFrom,
+          dateTo
+        })
+
+        // Determine output path
+        let outputPath
+        if (separateFiles) {
+          if (!existsSync(filePath)) {
+            mkdirSync(filePath, { recursive: true })
+          }
+          const ext = format === 'xlsx' ? 'xlsx' : format === 'json' ? 'json' : 'csv'
+          outputPath = join(filePath, `${tableName}.${ext}`)
+        } else {
+          outputPath = filePath.endsWith(`.${format}`) ? filePath : `${filePath}.${format}`
+        }
+
+        // Write file
+        writeExportFile(data, outputPath, format, {
+          includeHeaders,
+          tableName
+        })
+
+        exportedFiles.push(outputPath)
+      }
+
+      return {
+        success: true,
+        files: exportedFiles,
+        message: `Successfully exported ${validTables.length} table(s)`
+      }
+    } catch (error) {
+      console.error('Export error:', error)
+      return { success: false, error: error.message }
+    }
+  })
+
+  ipcMain.handle('admin:get-backup-settings', async () => {
+    const nextScheduledBackup = db.backupManager.nextScheduledRun()
+    console.log({ ...db.backupManager.settings, nextScheduledBackup })
+    return { ...db.backupManager.settings, nextScheduledBackup }
+  })
 
   /* ------------------------------------------------------------------
    * Misc
@@ -584,7 +823,11 @@ async function setupApp(data) {
     date_format: data.defaults.date_format
   }
 
-  await db.saveSettings(settings)
+  await db.saveSettings(settings, 'admin')
+
+  await db.setUpLabelsData()
+
+  SETTINGS = db.fetchSettings()
 
   return {
     valid: true,

@@ -35,9 +35,7 @@
           >
             <div>
               <h2 class="text-2xl font-bold text-gray-900 dark:text-white">Add New User</h2>
-              <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">
-                Enter user details and assign labels
-              </p>
+              <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">Enter user details</p>
             </div>
             <button
               class="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors text-gray-500 dark:text-gray-400"

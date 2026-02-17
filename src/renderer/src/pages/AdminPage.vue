@@ -14,10 +14,71 @@
         >
           <transition name="fade-slide">
             <div v-if="isSidebarOpen" class="flex items-center gap-3">
-              <div
-                class="w-10 h-10 bg-gradient-to-br from-emerald-500 to-teal-600 rounded-xl flex items-center justify-center shadow-md flex-shrink-0"
+              <button
+                class="w-10 h-10 bg-gradient-to-br rounded-xl flex items-center justify-center shadow-md flex-shrink-0"
+                @click="toggleSidebar"
               >
-                <svg
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200">
+                  <!-- Gradient definitions -->
+                  <defs>
+                    <linearGradient id="bgGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                      <stop offset="0%" style="stop-color: #f8fafc; stop-opacity: 1" />
+                      <stop offset="100%" style="stop-color: #e2e8f0; stop-opacity: 1" />
+                    </linearGradient>
+                    <linearGradient id="accentGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                      <stop offset="0%" style="stop-color: #10b981; stop-opacity: 1" />
+                      <stop offset="100%" style="stop-color: #059669; stop-opacity: 1" />
+                    </linearGradient>
+                    <linearGradient id="labelGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                      <stop offset="0%" style="stop-color: #3b82f6; stop-opacity: 1" />
+                      <stop offset="100%" style="stop-color: #2563eb; stop-opacity: 1" />
+                    </linearGradient>
+                  </defs>
+
+                  <!-- Orange Rx symbol with formal serif font -->
+                  <text
+                    x="100"
+                    y="130"
+                    font-family="Times New Roman, Times, serif"
+                    font-size="110"
+                    font-weight="bold"
+                    fill="#ea580c"
+                    text-anchor="middle"
+                  >
+                    Rx
+                  </text>
+
+                  <!-- Medical cross accent in top right -->
+                  <g transform="translate(145, 45)">
+                    <rect x="-2" y="0" width="4" height="20" fill="url(#accentGrad)" rx="2" />
+                    <rect x="-10" y="8" width="20" height="4" fill="url(#accentGrad)" rx="2" />
+                  </g>
+
+                  <!-- Larger blue label tag icon in bottom right corner -->
+                  <g transform="translate(140, 145)">
+                    <path d="M 0,0 L 30,0 L 37,7 L 37,23 L 0,23 Z" fill="url(#labelGrad)" />
+                    <circle cx="9" cy="11.5" r="3" fill="white" />
+                    <line
+                      x1="17"
+                      y1="7"
+                      x2="30"
+                      y2="7"
+                      stroke="white"
+                      stroke-width="2"
+                      stroke-linecap="round"
+                    />
+                    <line
+                      x1="17"
+                      y1="16"
+                      x2="30"
+                      y2="16"
+                      stroke="white"
+                      stroke-width="2"
+                      stroke-linecap="round"
+                    />
+                  </g>
+                </svg>
+                <!-- <svg
                   class="w-6 h-6 text-white"
                   fill="none"
                   stroke="currentColor"
@@ -29,12 +90,54 @@
                     stroke-width="2.5"
                     d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
                   />
-                </svg>
-              </div>
+                </svg> -->
+              </button>
               <div>
-                <h1 class="text-xl font-bold text-slate-900 dark:text-white tracking-tight">
+                <!-- <h1 class="text-xl font-bold text-slate-900 dark:text-white tracking-tight">
                   RxLabel
-                </h1>
+                </h1> -->
+                <div class="">
+                  <svg class="w-30" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 120">
+                    <!-- Gradient definitions -->
+                    <defs>
+                      <linearGradient id="orangeGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                        <stop offset="0%" style="stop-color: #f97316; stop-opacity: 1" />
+                        <stop offset="100%" style="stop-color: #ea580c; stop-opacity: 1" />
+                      </linearGradient>
+                      <linearGradient id="blueGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                        <stop offset="0%" style="stop-color: #3b82f6; stop-opacity: 1" />
+                        <stop offset="100%" style="stop-color: #2563eb; stop-opacity: 1" />
+                      </linearGradient>
+                    </defs>
+
+                    <!-- Background transparent -->
+
+                    <!-- "Rx" in orange -->
+                    <text
+                      x="20"
+                      y="80"
+                      font-family="Arial, sans-serif"
+                      font-size="72"
+                      font-weight="700"
+                      fill="url(#orangeGrad)"
+                      font-style="italic"
+                    >
+                      Rx
+                    </text>
+
+                    <!-- "Label" in blue -->
+                    <text
+                      x="130"
+                      y="80"
+                      font-family="Arial, sans-serif"
+                      font-size="72"
+                      font-weight="700"
+                      fill="url(#blueGrad)"
+                    >
+                      Label
+                    </text>
+                  </svg>
+                </div>
                 <p class="text-xs text-slate-500 dark:text-slate-400 font-medium">Admin Console</p>
               </div>
             </div>
@@ -126,9 +229,11 @@
               </div>
               <div class="flex-1 min-w-0">
                 <p class="text-sm font-semibold text-slate-900 dark:text-white truncate">
-                  Admin User
+                  {{ currentUser.name || 'Admin User' }}
                 </p>
-                <p class="text-xs text-slate-500 dark:text-slate-400 truncate">admin@rxlabel.com</p>
+                <p class="text-xs text-slate-500 dark:text-slate-400 truncate">
+                  {{ currentUser.email }}
+                </p>
               </div>
             </div>
           </transition>
@@ -161,6 +266,32 @@
             >
               Save Changes
             </button>
+            <button
+              class="group relative flex items-center justify-center w-10 h-10 rounded-full border-2 border-gray-200 dark:border-gray-700 bg-gradient-to-br from-emerald-500 hover:border-green-500 dark:hover:border-green-400 hover:bg-green-50 dark:hover:bg-green-950/50 transition-all duration-200 shadow-sm hover:shadow-md hover:scale-105 active:scale-95"
+              title="Go to Labels"
+              @click="() => router.push({ name: 'MedicationLabel' })"
+            >
+              <!-- Icon -->
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="18"
+                height="18"
+                fill="currentColor"
+                class="text-gray-600 dark:text-gray-400 group-hover:text-green-600 dark:group-hover:text-green-400 transition-colors duration-200"
+                viewBox="0 0 16 16"
+              >
+                <path
+                  d="M2 1a1 1 0 0 0-1 1v4.586a1 1 0 0 0 .293.707l7 7a1 1 0 0 0 1.414 0l4.586-4.586a1 1 0 0 0 0-1.414l-7-7A1 1 0 0 0 6.586 1zm4 3.5a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0"
+                />
+              </svg>
+
+              <!-- Tooltip (optional) -->
+              <span
+                class="absolute -bottom-10 left-1/2 -translate-x-1/2 px-2 py-1 bg-gradient-to-br from-emerald-500 to-teal-600 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap pointer-events-none"
+              >
+                Labels
+              </span>
+            </button>
           </div>
         </header>
 
@@ -176,18 +307,21 @@
 </template>
 
 <script setup>
-import { ref, computed, defineAsyncComponent } from 'vue'
+import { ref, computed, defineAsyncComponent, onMounted } from 'vue'
+import { useRouter } from 'vue-router'
+import { useSettings } from '../composables/useSettings'
+import { useAdmin, generalStats } from '../composables/useAdmin'
 
-// Views (you can extract them to separate files later)
+const router = useRouter()
+const { currentUser } = useSettings()
+const { getGeneralStats, getBackupSettings } = useAdmin()
+
 const DashboardView = defineAsyncComponent(() => import('../components/admin/DashboardView.vue'))
 const UsersView = defineAsyncComponent(() => import('../components/admin/UsersView.vue'))
 const LabelsView = defineAsyncComponent(() => import('../components/admin/LabelsView.vue'))
 const SettingsView = defineAsyncComponent(() => import('../components/admin/SettingsView.vue'))
 const DatabaseView = defineAsyncComponent(() => import('../components/admin/DatabaseView.vue'))
 const ReportsView = defineAsyncComponent(() => import('../components/admin/ReportsView.vue'))
-
-// For now keeping inline — move to separate files in production
-// (I've left your original view definitions unchanged, just import them)
 
 const views = {
   dashboard: DashboardView,
@@ -261,6 +395,12 @@ const toggleTheme = () => {
 const toggleSidebar = () => {
   isSidebarOpen.value = !isSidebarOpen.value
 }
+
+onMounted(async () => {
+  await getGeneralStats()
+  await getBackupSettings()
+  console.log(generalStats.value)
+})
 </script>
 
 <style scoped>
